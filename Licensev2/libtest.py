@@ -1,6 +1,12 @@
 import ctypes
+import sys
 
-path = "./test/LICENSE"
+try:
+    path = sys.argv[1]
+except IndexError:
+    print("No path specified")
+    exit(-1)
+
 so = ctypes.cdll.LoadLibrary('./compiled/shared/libprime.so')
 match = so.FindMatch
 
