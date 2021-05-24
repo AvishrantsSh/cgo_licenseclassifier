@@ -16,8 +16,10 @@ func New() (*classifier.Classifier, error) {
 	return c, c.LoadLicenses(baseLicenses)
 }
 
-func FindMatch(path string) *C.char {
+//export FindMatch
+func FindMatch(filepath *C.char) *C.char {
 	var status string
+	path := C.GoString(filepath)
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		status = "Couldn't read file at : " + path
@@ -32,11 +34,8 @@ func FindMatch(path string) *C.char {
 	}
 	m := c.Match(data)
 	for i := 0; i < m.Len(); i++ {
-		status = fmt.Sprintf("Name : %s\nConfidence : %f\nMatchType : %s\nStartLine : %d\nEndLine : %d\n\n", m[i].Name, m[i].Confidence, m[i].MatchType, m[i].StartLine, m[i].EndLine)
+		status = fmt.Sprintf("Name : %s\nConfidence : %f\nMatchType : %s\nStartLine : %d\nEndLine : %d", m[i].Name, m[i].Confidence, m[i].MatchType, m[i].StartLine, m[i].EndLine)
 	}
 	return C.CString(status)
 }
-func main() {
-	license := "/home/avishrant/GitRepo/scancode.io/LICENSE"
-	fmt.Println(C.GoString(FindMatch(license)))
-}
+func main() {}
