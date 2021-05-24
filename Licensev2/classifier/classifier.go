@@ -14,6 +14,7 @@
 
 package classifier
 
+import "C"
 import (
 	"fmt"
 	"io"
