@@ -1,5 +1,5 @@
 // Derivative work of Google LicenseClassifier V2
-module github.com/google/licenseclassifier/v2
+module github.com/avishrantssh/GoLicenseClassifier
 
 go 1.15
 

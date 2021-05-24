@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/google/licenseclassifier/v2/classifier"
+	"github.com/avishrantssh/GoLicenseClassifier/classifier"
 )
 
 var defaultThreshold = 0.8
