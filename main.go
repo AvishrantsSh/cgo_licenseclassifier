@@ -4,6 +4,7 @@ import "C"
 import (
 	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"github.com/avishrantssh/GoLicenseClassifier/classifier"
 )
@@ -18,24 +19,39 @@ func New() (*classifier.Classifier, error) {
 
 //export FindMatch
 func FindMatch(filepath *C.char) *C.char {
-	var status string
-	path := C.GoString(filepath)
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		status = "Couldn't read file at : " + path
-	}
+	var status []string
+	patharr := GetPaths(C.GoString(filepath))
 
-	data := []byte(string(b))
+	for _, path := range patharr {
+		b, err := ioutil.ReadFile(path)
+		// File Not Found
+		if err != nil {
+			status = append(status, "E1,"+path)
+		}
 
-	// New Classifier
-	c, err := New()
-	if err != nil {
-		status = "Couldn't instantiate standard test classifier: " + err.Error()
+		data := []byte(string(b))
+
+		c, err := New()
+		// Internal Error in Initializing Classifier
+		if err != nil {
+			status = append(status, "E2,"+err.Error())
+		}
+
+		m := c.Match(data)
+		for i := 0; i < m.Len(); i++ {
+			status = append(status, fmt.Sprintf("(%s,%f,%s,%d,%d),", m[i].Name, m[i].Confidence, m[i].MatchType, m[i].StartLine, m[i].EndLine))
+		}
+
+		// If No valid license is found
+		if len(m) == 0 {
+			status = append(status, "E3,"+path)
+		}
 	}
-	m := c.Match(data)
-	for i := 0; i < m.Len(); i++ {
-		status = fmt.Sprintf("Name : %s\nConfidence : %f\nMatchType : %s\nStartLine : %d\nEndLine : %d", m[i].Name, m[i].Confidence, m[i].MatchType, m[i].StartLine, m[i].EndLine)
-	}
-	return C.CString(status)
+	return C.CString(strings.Join(status, "\n"))
 }
+
+func GetPaths(filepath string) []string {
+	return strings.SplitN(filepath, "\n", -1)
+}
+
 func main() {}
