@@ -21,8 +21,9 @@ func New() (*classifier.Classifier, error) {
 func FindMatch(filepath *C.char) *C.char {
 	var status []string
 	patharr := GetPaths(C.GoString(filepath))
-	ch := make(chan struct{})
+	sem := make(chan struct{})
 	for _, path := range patharr {
+		// Go Routine far faster Processing
 		go func(path string) {
 			b, err := ioutil.ReadFile(path)
 			// File Not Found
@@ -50,11 +51,11 @@ func FindMatch(filepath *C.char) *C.char {
 			} else {
 				status = append(status, path+":"+tmp)
 			}
-			ch <- struct{}{}
+			sem <- struct{}{}
 		}(path)
 	}
 	for range patharr {
-		<-ch
+		<-sem
 	}
 	return C.CString(strings.Join(status, "\n"))
 }
@@ -63,23 +64,4 @@ func GetPaths(filepath string) []string {
 	return strings.SplitN(filepath, "\n", -1)
 }
 
-func main() {
-	// 	str := `/home/avishrant/GitRepo/scancode.io/setup.py
-	// /home/avishrant/GitRepo/scancode.io/CHANGELOG.rst
-	// /home/avishrant/GitRepo/scancode.io/setup.cfg
-	// /home/avishrant/GitRepo/scancode.io/docker.env
-	// /home/avishrant/GitRepo/scancode.io/manage.py
-	// /home/avishrant/GitRepo/scancode.io/NOTICE
-	// /home/avishrant/GitRepo/scancode.io/LICENSE
-	// /home/avishrant/GitRepo/scancode.io/docker-compose.yml
-	// /home/avishrant/GitRepo/scancode.io/.env
-	// /home/avishrant/GitRepo/scancode.io/Makefile
-	// /home/avishrant/GitRepo/scancode.io/pyvenv.cfg
-	// /home/avishrant/GitRepo/scancode.io/Dockerfile
-	// /home/avishrant/GitRepo/scancode.io/.gitignore
-	// /home/avishrant/GitRepo/scancode.io/README.rst
-	// /home/avishrant/GitRepo/scancode.io/MANIFEST.in
-	// /home/avishrant/GitRepo/scancode.io/scan.NOTICE`
-
-	// fmt.Println(C.GoString(FindMatch(C.CString(str))))
-}
+func main() {}

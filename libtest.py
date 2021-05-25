@@ -10,13 +10,16 @@ path = [root + f for f in listdir(root) if isfile(join(root, f))]
 # Shared Library Initialization
 so = ctypes.cdll.LoadLibrary('./compiled/libmatch.so')
 match = so.FindMatch
+
+# Argument Data Type Initialization
 match.argtypes=[ctypes.c_char_p]
 match.restype = ctypes.c_char_p
 
+# Just for metrics :P
 start = time()
 
-# path = '\n'.join(path)
-print(path)
+path = '\n'.join(path)
+# print(path)
 res = match(path.encode('utf-8'))
 
 print(res.decode('utf-8'))
