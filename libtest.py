@@ -15,7 +15,7 @@ match.restype = ctypes.c_char_p
 
 start = time()
 
-path = '\n'.join(path)
+# path = '\n'.join(path)
 print(path)
 res = match(path.encode('utf-8'))
 
