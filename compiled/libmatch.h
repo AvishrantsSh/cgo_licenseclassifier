@@ -69,6 +69,7 @@ extern "C" {
 #endif
 
 extern char* FindMatch(char* filepath);
+extern void LoadCustomLicenses(char* path);
 
 #ifdef __cplusplus
 }
