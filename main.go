@@ -12,7 +12,8 @@ import (
 var defaultThreshold = 0.8
 var baseLicenses = "./classifier/licenses"
 
-func New() (*classifier.Classifier, error) {
+// CreateClassifier creates a classifier instance
+func CreateClassifier() (*classifier.Classifier, error) {
 	c := classifier.NewClassifier(defaultThreshold)
 	return c, c.LoadLicenses(baseLicenses)
 }
@@ -33,7 +34,7 @@ func FindMatch(filepath *C.char) *C.char {
 
 			data := []byte(string(b))
 
-			c, err := New()
+			c, err := CreateClassifier()
 			// Internal Error in Initializing Classifier
 			if err != nil {
 				status = append(status, "E2,"+err.Error())
@@ -57,11 +58,18 @@ func FindMatch(filepath *C.char) *C.char {
 	for range patharr {
 		<-sem
 	}
+
 	return C.CString(strings.Join(status, "\n"))
 }
 
+// GetPaths function is used to convert new-line seperated filepaths to a string array.
 func GetPaths(filepath string) []string {
 	return strings.SplitN(filepath, "\n", -1)
+}
+
+//export LoadCustomLicenses
+func LoadCustomLicenses(path *C.char) {
+	baseLicenses = C.GoString(path)
 }
 
 func main() {}
