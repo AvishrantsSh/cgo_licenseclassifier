@@ -17,7 +17,7 @@ import (
 )
 
 // Default Threshold for Filtering the results
-var defaultThreshold = 0.6
+var defaultThreshold = 0.8
 
 // Base Licenses Root Directory
 var baseLicenses = "./classifier/default"
@@ -53,12 +53,12 @@ func FindMatch(filepath *C.char) *C.char {
 			}
 
 			data := []byte(string(b))
-			// Internal Error in Initializing Classifier
 
+			// Internal Error in Initializing Classifier
 			m := c.Match(data)
 			var tmp string
 			for i := 0; i < m.Len(); i++ {
-				tmp += fmt.Sprintf("(%s,%f,%s,%d,%d),", m[i].Name, m[i].Confidence, m[i].MatchType, m[i].StartLine, m[i].EndLine)
+				tmp += fmt.Sprintf("(%s,%f,%d,%d,%d,%d),", m[i].Name, m[i].Confidence, m[i].StartLine, m[i].EndLine, m[i].StartTokenIndex, m[i].EndTokenIndex)
 			}
 
 			// If No valid license is found
@@ -84,13 +84,19 @@ func GetPaths(filepath string) []string {
 }
 
 //export LoadCustomLicenses
-func LoadCustomLicenses(path *C.char) {
+func LoadCustomLicenses(path *C.char) int {
 	baseLicenses = C.GoString(path)
+	return 1
 }
 
 //export SetThreshold
-func SetThreshold(thresh float64) {
-	defaultThreshold = thresh
+func SetThreshold(thresh int) int {
+	if thresh < 0 || thresh > 100 {
+		return 1
+	}
+
+	defaultThreshold = float64(thresh) / 100.0
+	return 1
 }
 
 func main() {}

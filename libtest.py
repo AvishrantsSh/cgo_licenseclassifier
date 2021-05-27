@@ -1,25 +1,40 @@
 import ctypes
-from os.path import join, dirname, isfile
+from error import PathIsDir
+from os.path import join, dirname, isfile, isdir
 from os import walk, listdir
 from time import time
+from error import *
 
 class License:
     ROOT = dirname(__file__)
     # Shared Library
     so = ctypes.cdll.LoadLibrary(join(ROOT, 'compiled/libmatch.so'))
+    match = so.FindMatch
+    match.argtypes=[ctypes.c_char_p]
+    match.restype = ctypes.c_char_p
+
+    loadCustomLib = so.LoadCustomLicenses
+    loadCustomLib.argtypes=[ctypes.c_char_p]
+    loadCustomLib.restype = ctypes.c_int
+
+    setThresh = so.SetThreshold
+    setThresh.argtypes=[ctypes.c_int]
+    setThresh.restype = ctypes.c_int
 
     def __init__(self):
-        self.match = License.so.FindMatch
-        self.match.argtypes=[ctypes.c_char_p]
-        self.match.restype = ctypes.c_char_p
+        pass
 
-        self.custom = License.so.LoadCustomLicenses
-        self.custom.argtypes=[ctypes.c_char_p]
-
-        self.thresh = License.so.SetThreshold
-        self.thresh.argtypes=[ctypes.c_float]
-
-    def findMatch(self, root, searchSubDir = True):
+    def findMatch(self, filepath):
+        """Function to find a license match for file specified by `filepath`"""
+        if isdir(filepath):
+            raise PathIsDir
+        exec_time = time()
+        res = self.match(filepath.encode('utf-8'))
+        exec_time = time() - exec_time
+        return res.decode('utf-8'), exec_time
+    
+    def catalogueDir(self, root, searchSubDir = True):
+        """Function to find a license match for all files present in `root`"""
         exec_time = time()
         filepath = list()
         if searchSubDir:
@@ -32,14 +47,17 @@ class License:
         res = self.match(filepath.encode('utf-8'))
         exec_time = time() - exec_time
         return res.decode('utf-8'), exec_time
-    
+
     def loadCustom(self, libpath):
-        self.custom(libpath.encode('utf-8'))
+        """Load a custom set of licenses. Licenses should be named as `<license>.txt`"""
+        _ = self.loadCustomLib(libpath.encode('utf-8'))
 
     def setThreshold(self, thresh):
-        print(self.thresh(thresh))
+        """ Set a threshold between `0 - 100`. Default is `80`. Speed Degrades with lower threshold. """
+        _ = self.setThresh(thresh)
 
 l = License()
-res, exec_tm = l.findMatch('/home/avishrant/GitRepo/avishrantssh.github.io/')
+l.setThreshold(80)
+res, exec_tm = l.catalogueDir('/home/avishrant/GitRepo/scancode.io/', searchSubDir=False)
 print(res)
 print(exec_tm)
