@@ -57,7 +57,7 @@ class License:
         _ = self.setThresh(thresh)
 
 l = License()
-l.setThreshold(80)
+l.setThreshold(75)
 res, exec_tm = l.catalogueDir('/home/avishrant/GitRepo/scancode.io/', searchSubDir=False)
 print(res)
 print(exec_tm)

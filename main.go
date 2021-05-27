@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strings"
+	"sync"
 
 	"github.com/avishrantssh/GoLicenseClassifier/classifier"
 )
@@ -30,31 +31,32 @@ func CreateClassifier() (*classifier.Classifier, error) {
 
 //export FindMatch
 func FindMatch(filepath *C.char) *C.char {
-	var status []string
 	patharr := GetPaths(C.GoString(filepath))
+	var status = make([]string, len(patharr))
 
 	// A simple channel implementation to lock function until execution is complete
-	sem := make(chan struct{})
 	c, err := CreateClassifier()
 
 	// fmt.Println("Finished Reading licenses")
 	if err != nil {
 		return C.CString("E1")
 	}
+	var wg sync.WaitGroup
+	wg.Add(len(patharr))
 
-	for _, path := range patharr {
+	for index, path := range patharr {
+		// Spawn a thread for each iteration in the loop.
+		go func(index int, path string) {
+			defer wg.Done()
 
-		// Go Routine far faster Processing
-		go func(path string) {
 			b, err := ioutil.ReadFile(path)
 			// File Not Found
 			if err != nil {
-				status = append(status, "E2,"+path)
+				status[index] = "File Does Not Exist"
 			}
 
 			data := []byte(string(b))
 
-			// Internal Error in Initializing Classifier
 			m := c.Match(data)
 			var tmp string
 			for i := 0; i < m.Len(); i++ {
@@ -63,18 +65,15 @@ func FindMatch(filepath *C.char) *C.char {
 
 			// If No valid license is found
 			if tmp == "" {
-				status = append(status, "E3,"+path)
+				status[index] = "No Valid License"
 			} else {
-				status = append(status, "S0,"+path+":"+tmp)
+				status[index] = tmp
 			}
-
-			sem <- struct{}{}
-		}(path)
-	}
-	for range patharr {
-		<-sem
+		}(index, path)
 	}
 
+	// Wait for `wg.Done()` to be exectued the number of times specified in the `wg.Add()` call.
+	wg.Wait()
 	return C.CString(strings.Join(status, "\n"))
 }
 
@@ -94,7 +93,6 @@ func SetThreshold(thresh int) int {
 	if thresh < 0 || thresh > 100 {
 		return 1
 	}
-
 	defaultThreshold = float64(thresh) / 100.0
 	return 1
 }
