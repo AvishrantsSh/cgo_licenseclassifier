@@ -1,31 +1,45 @@
 import ctypes
+from os.path import join, dirname, isfile
+from os import walk, listdir
 from time import time
-from os import listdir
-from os.path import isfile, join
 
-def match(root):
-    path = [root + f for f in listdir(root) if isfile(join(root, f))]
-    # path = ["/home/avishrant/GitRepo/scancode.io/LICENSE"]
+class License:
+    ROOT = dirname(__file__)
+    # Shared Library
+    so = ctypes.cdll.LoadLibrary(join(ROOT, 'compiled/libmatch.so'))
 
-    # Shared Library Initialization
-    so = ctypes.cdll.LoadLibrary('./compiled/libmatch.so')
-    match = so.FindMatch
-    custom = so.LoadCustomLicenses
+    def __init__(self):
+        self.match = License.so.FindMatch
+        self.match.argtypes=[ctypes.c_char_p]
+        self.match.restype = ctypes.c_char_p
 
-    # Argument Data Type Initialization
-    match.argtypes=[ctypes.c_char_p]
-    match.restype = ctypes.c_char_p
-    custom.argtypes=[ctypes.c_char_p]
+        self.custom = License.so.LoadCustomLicenses
+        self.custom.argtypes=[ctypes.c_char_p]
 
-    # Just for metrics :P
-    start = time()
+        self.thresh = License.so.SetThreshold
+        self.thresh.argtypes=[ctypes.c_float]
 
-    path = '\n'.join(path)
-    # print(path)
-    custom('./classifier/alternate'.encode('utf-8'))
-    res = match(path.encode('utf-8'))
+    def findMatch(self, root, searchSubDir = True):
+        exec_time = time()
+        filepath = list()
+        if searchSubDir:
+            for (dirpath, _, filenames) in walk(root):
+                filepath += [dirpath + f for f in filenames]
+        else:
+            filepath = [root + f for f in listdir(root) if isfile(join(root, f))]
+            
+        filepath = '\n'.join(filepath)
+        res = self.match(filepath.encode('utf-8'))
+        exec_time = time() - exec_time
+        return res.decode('utf-8'), exec_time
+    
+    def loadCustom(self, libpath):
+        self.custom(libpath.encode('utf-8'))
 
-    print(res.decode('utf-8'))
-    print("Execution time : ", time() - start)
+    def setThreshold(self, thresh):
+        print(self.thresh(thresh))
 
-match('/home/avishrant/GitRepo/scancode.io/')
+l = License()
+res, exec_tm = l.findMatch('/home/avishrant/GitRepo/avishrantssh.github.io/')
+print(res)
+print(exec_tm)

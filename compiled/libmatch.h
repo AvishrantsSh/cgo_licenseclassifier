@@ -70,6 +70,7 @@ extern "C" {
 
 extern char* FindMatch(char* filepath);
 extern void LoadCustomLicenses(char* path);
+extern void SetThreshold(GoFloat64 thresh);
 
 #ifdef __cplusplus
 }

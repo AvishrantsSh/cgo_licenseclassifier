@@ -17,10 +17,10 @@ import (
 )
 
 // Default Threshold for Filtering the results
-var defaultThreshold = 0.8
+var defaultThreshold = 0.6
 
 // Base Licenses Root Directory
-var baseLicenses = "./classifier/licenses"
+var baseLicenses = "./classifier/default"
 
 // Create a classifier instance and load base licenses
 func CreateClassifier() (*classifier.Classifier, error) {
@@ -65,7 +65,7 @@ func FindMatch(filepath *C.char) *C.char {
 			if tmp == "" {
 				status = append(status, "E3,"+path)
 			} else {
-				status = append(status, path+":"+tmp)
+				status = append(status, "S0,"+path+":"+tmp)
 			}
 
 			sem <- struct{}{}
@@ -86,6 +86,11 @@ func GetPaths(filepath string) []string {
 //export LoadCustomLicenses
 func LoadCustomLicenses(path *C.char) {
 	baseLicenses = C.GoString(path)
+}
+
+//export SetThreshold
+func SetThreshold(thresh float64) {
+	defaultThreshold = thresh
 }
 
 func main() {}
