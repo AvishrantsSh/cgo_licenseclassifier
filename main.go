@@ -1,16 +1,11 @@
-/*
-	Error Codes:
-	E1 - Failure in loading licenses from given directory.
-	E2 - File Not Found at specified path.
-	E3 - No matching license found.
-*/
-
 package main
 
 import "C"
 import (
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -23,6 +18,9 @@ var defaultThreshold = 0.8
 // Base Licenses Root Directory
 var baseLicenses = "./classifier/default"
 
+// Regexp for Detecting Copyrights
+var copyrightRE = regexp.MustCompile(`(?m)(?i:Copyright)\s+(?i:©\s+|\(c\)\s+)?(?:\d{2,4})(?:[-,]\s*\d{2,4})*,?\s*(?i:by)?\s*(.*?(?i:\s+Inc\.)?)[.,]?\s*(?i:All rights reserved\.?)?\s*$`)
+
 // Create a classifier instance and load base licenses
 func CreateClassifier() (*classifier.Classifier, error) {
 	c := classifier.NewClassifier(defaultThreshold)
@@ -30,16 +28,16 @@ func CreateClassifier() (*classifier.Classifier, error) {
 }
 
 //export FindMatch
-func FindMatch(filepath *C.char) *C.char {
-	patharr := GetPaths(C.GoString(filepath))
-	var status = make([]string, len(patharr))
+func FindMatch(fpaths *C.char) *C.char {
+	patharr := GetPaths(C.GoString(fpaths))
+	status := make([]string, len(patharr))
 
 	// A simple channel implementation to lock function until execution is complete
 	c, err := CreateClassifier()
 
 	// fmt.Println("Finished Reading licenses")
 	if err != nil {
-		return C.CString("E1")
+		return C.CString("{ERROR:" + err.Error() + "}")
 	}
 	var wg sync.WaitGroup
 	wg.Add(len(patharr))
@@ -52,7 +50,8 @@ func FindMatch(filepath *C.char) *C.char {
 			b, err := ioutil.ReadFile(path)
 			// File Not Found
 			if err != nil {
-				status[index] = "File Does Not Exist"
+				status[index] = "{ERROR:" + err.Error() + "}"
+				return
 			}
 
 			data := []byte(string(b))
@@ -63,12 +62,9 @@ func FindMatch(filepath *C.char) *C.char {
 				tmp += fmt.Sprintf("(%s,%f,%d,%d,%d,%d),", m[i].Name, m[i].Confidence, m[i].StartLine, m[i].EndLine, m[i].StartTokenIndex, m[i].EndTokenIndex)
 			}
 
-			// If No valid license is found
-			if tmp == "" {
-				status[index] = "No Valid License"
-			} else {
-				status[index] = tmp
-			}
+			holder := CopyrightHolder(string(b))
+			status[index] = "{PATH:" + path + "},{EXT:" + filepath.Ext(path) + "},{LICENSE:[" + tmp + "]},{COP-HOLDER:[" + holder + "]}"
+
 		}(index, path)
 	}
 
@@ -95,6 +91,16 @@ func SetThreshold(thresh int) int {
 	}
 	defaultThreshold = float64(thresh) / 100.0
 	return 1
+}
+
+// CopyrightHolder finds a copyright notification, if it exists, and returns
+// the copyright holder.
+func CopyrightHolder(contents string) string {
+	matches := copyrightRE.FindStringSubmatch(contents)
+	if len(matches) == 2 {
+		return matches[1]
+	}
+	return ""
 }
 
 func main() {}

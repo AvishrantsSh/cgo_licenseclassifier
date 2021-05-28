@@ -68,7 +68,7 @@ typedef struct { void *data; GoInt len; GoInt cap; } GoSlice;
 extern "C" {
 #endif
 
-extern char* FindMatch(char* filepath);
+extern char* FindMatch(char* fpaths);
 extern GoInt LoadCustomLicenses(char* path);
 extern GoInt SetThreshold(GoInt thresh);
 
