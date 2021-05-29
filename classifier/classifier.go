@@ -18,8 +18,8 @@ import "C"
 import (
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
-	"os"
 	"path"
 	"path/filepath"
 	"sort"
@@ -187,7 +187,7 @@ func NewClassifier(threshold float64) *Classifier {
 // classifier.
 func (c *Classifier) LoadLicenses(dir string) error {
 	var files []string
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.WalkDir(dir, func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
