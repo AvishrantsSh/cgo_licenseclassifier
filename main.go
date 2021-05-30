@@ -12,11 +12,14 @@ import (
 	"github.com/avishrantssh/GoLicenseClassifier/classifier"
 )
 
+var ROOT = ""
+
 // Default Threshold for Filtering the results
 var defaultThreshold = 0.8
 
-// Base Licenses Root Directory
-var baseLicenses = "./classifier/default"
+// Default Licenses Root Directory
+var default_path = "./classifier/default"
+var licensePath string
 
 // Regexp for Detecting Copyrights
 var copyrightRE = regexp.MustCompile(`(?m)(?i:Copyright)\s+(?i:©\s+|\(c\)\s+)?(?:\d{2,4})(?:[-,]\s*\d{2,4})*,?\s*(?i:by)?\s*(.*?(?i:\s+Inc\.)?)[.,]?\s*(?i:All rights reserved\.?)?\s*$`)
@@ -24,11 +27,15 @@ var copyrightRE = regexp.MustCompile(`(?m)(?i:Copyright)\s+(?i:©\s+|\(c\)\s+)?(
 // Create a classifier instance and load base licenses
 func CreateClassifier() (*classifier.Classifier, error) {
 	c := classifier.NewClassifier(defaultThreshold)
-	return c, c.LoadLicenses(baseLicenses)
+	return c, c.LoadLicenses(licensePath)
 }
 
 //export FindMatch
-func FindMatch(fpaths *C.char) *C.char {
+func FindMatch(root *C.char, fpaths *C.char) *C.char {
+	ROOT = C.GoString(root)
+	if licensePath == "" {
+		licensePath = filepath.Join(ROOT, default_path)
+	}
 	patharr := GetPaths(C.GoString(fpaths))
 	status := make([]string, len(patharr))
 
@@ -80,7 +87,7 @@ func GetPaths(filepath string) []string {
 
 //export LoadCustomLicenses
 func LoadCustomLicenses(path *C.char) int {
-	baseLicenses = C.GoString(path)
+	licensePath = C.GoString(path)
 	return 1
 }
 
