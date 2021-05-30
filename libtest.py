@@ -1,27 +1,26 @@
 import ctypes
-from error import PathIsDir
+from error import *
 from os.path import join, dirname, isfile, isdir
 from os import walk, listdir
 from time import time
-from error import *
 
 
 class License:
-    ROOT = dirname(__file__)
+    _ROOT = dirname(__file__)
 
     # Shared Library
-    so = ctypes.cdll.LoadLibrary(join(ROOT, "compiled/libmatch.so"))
-    match = so.FindMatch
-    match.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
-    match.restype = ctypes.c_char_p
+    _so = ctypes.cdll.LoadLibrary(join(_ROOT, "compiled/libmatch.so"))
+    _match = _so.FindMatch
+    _match.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+    _match.restype = ctypes.c_char_p
 
-    loadCustomLib = so.LoadCustomLicenses
-    loadCustomLib.argtypes = [ctypes.c_char_p]
-    loadCustomLib.restype = ctypes.c_int
+    _loadCustomLib = _so.LoadCustomLicenses
+    _loadCustomLib.argtypes = [ctypes.c_char_p]
+    _loadCustomLib.restype = ctypes.c_int
 
-    setThresh = so.SetThreshold
-    setThresh.argtypes = [ctypes.c_int]
-    setThresh.restype = ctypes.c_int
+    _setThresh = _so.SetThreshold
+    _setThresh.argtypes = [ctypes.c_int]
+    _setThresh.restype = ctypes.c_int
 
     def __init__(self):
         pass
@@ -32,7 +31,7 @@ class License:
             raise PathIsDir
 
         exec_time = time()
-        res = self.match(License.ROOT.encode("utf-8"), filepath.encode("utf-8"))
+        res = self._match(License._ROOT.encode("utf-8"), filepath.encode("utf-8"))
         exec_time = time() - exec_time
         return res.decode("utf-8"), exec_time
 
@@ -47,17 +46,17 @@ class License:
             filepath = [root + f for f in listdir(root) if isfile(join(root, f))]
 
         filepath = "\n".join(filepath)
-        res = self.match(License.ROOT.encode("utf-8"), filepath.encode("utf-8"))
+        res = self._match(License._ROOT.encode("utf-8"), filepath.encode("utf-8"))
         exec_time = time() - exec_time
         return res.decode("utf-8"), exec_time
 
     def loadCustom(self, libpath):
         """Load a custom set of licenses"""
-        _ = self.loadCustomLib(libpath.encode("utf-8"))
+        _ = self._loadCustomLib(libpath.encode("utf-8"))
 
     def setThreshold(self, thresh):
         """Set a threshold between `0 - 100`. Default is `80`. Speed Degrades with lower threshold"""
-        _ = self.setThresh(thresh)
+        _ = self._setThresh(thresh)
 
 
 l = License()
