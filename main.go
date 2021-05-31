@@ -24,6 +24,9 @@ var licensePath string
 // Regexp for Detecting Copyrights
 var copyrightRE = regexp.MustCompile(`(?m)(?i:Copyright)\s+(?i:©\s+|\(c\)\s+)?(?:\d{2,4})(?:[-,]\s*\d{2,4})*,?\s*(?i:by)?\s*(.*?(?i:\s+Inc\.)?)[.,]?\s*(?i:All rights reserved\.?)?\s*$`)
 
+// Removing in-text special code literals
+var removeliteralRE = regexp.MustCompile(`\\n|\\f|\\r`)
+
 // Create a classifier instance and load base licenses
 func CreateClassifier() (*classifier.Classifier, error) {
 	c := classifier.NewClassifier(defaultThreshold)
@@ -69,8 +72,8 @@ func FindMatch(root *C.char, fpaths *C.char) *C.char {
 				tmp += fmt.Sprintf("(%s,%f,%d,%d,%d,%d),", m[i].Name, m[i].Confidence, m[i].StartLine, m[i].EndLine, m[i].StartTokenIndex, m[i].EndTokenIndex)
 			}
 
-			holder := CopyrightHolder(string(b))
-			status[index] = "{PATH:" + path + "},{EXT:" + filepath.Ext(path) + "},{LICENSE:[" + tmp + "]},{COP-HOLDER:[" + holder + "]}"
+			cpInfo, holder := CopyrightInfo(string(b))
+			status[index] = "{PATH:" + path + "},{EXT:" + filepath.Ext(path) + "},{LICENSE:[" + tmp + "]},{COP:[" + cpInfo + "]}{COP-HOLDER:[" + holder + "]}"
 
 		}(index, path)
 	}
@@ -102,12 +105,22 @@ func SetThreshold(thresh int) int {
 
 // CopyrightHolder finds a copyright notification, if it exists, and returns
 // the copyright holder.
-func CopyrightHolder(contents string) string {
-	matches := copyrightRE.FindStringSubmatch(contents)
-	if len(matches) == 2 {
-		return matches[1]
+func CopyrightInfo(contents string) (string, string) {
+	str := removeliteralRE.ReplaceAllString(contents, "\n")
+	matches := copyrightRE.FindAllStringSubmatch(str, -1)
+	var cpInfo, holder string
+	for _, match := range matches {
+		if len(match) == 2 {
+			if len(cpInfo) == 0 {
+				cpInfo = match[0]
+				holder = match[1]
+			} else {
+				cpInfo += "," + match[0]
+				holder += "," + match[1]
+			}
+		}
 	}
-	return ""
+	return cpInfo, holder
 }
 
 func main() {}
