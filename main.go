@@ -34,7 +34,7 @@ func CreateClassifier() (*classifier.Classifier, error) {
 }
 
 //export FindMatch
-func FindMatch(root *C.char, fpaths *C.char, getjson bool) *C.char {
+func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) *C.char {
 	ROOT = C.GoString(root)
 	if licensePath == "" {
 		licensePath = filepath.Join(ROOT, default_path)
@@ -90,7 +90,7 @@ func FindMatch(root *C.char, fpaths *C.char, getjson bool) *C.char {
 
 	// Wait for `wg.Done()` to be exectued the number of times specified in the `wg.Add()` call.
 	wg.Wait()
-	f_error := res.Finish("./test.json")
+	f_error := res.Finish(C.GoString(outputPath))
 	if f_error != nil {
 		return C.CString(f_error.Error())
 	}
