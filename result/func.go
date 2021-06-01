@@ -2,7 +2,6 @@ package result
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"time"
 )
@@ -50,6 +49,5 @@ func (j *JSON_struct) MarshalJSON() ([]byte, error) {
 }
 
 func (j *JSON_struct) AddFile(index int, file *FileInfo) {
-	fmt.Println(file)
 	j.files[index] = *file
 }
