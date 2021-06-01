@@ -3,3 +3,4 @@
 .env
 error.py
 libtest.py
+*.json
