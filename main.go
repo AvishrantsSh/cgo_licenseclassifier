@@ -62,6 +62,7 @@ func FindMatch(root *C.char, fpaths *C.char, getjson bool) *C.char {
 			// File Not Found
 			if err != nil {
 				finfo.Errors = err.Error()
+				res.AddFile(index, &finfo)
 				return
 			}
 
