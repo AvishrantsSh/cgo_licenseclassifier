@@ -1,0 +1,707 @@
+{
+ "Header": {
+  "Tool_name": "Golicense_classifier",
+  "Start_timestamp": "2021-06-01T09:27:39.418503795Z",
+  "End_timestamp": "2021-06-01T09:27:41.65839376Z",
+  "Duration": 2.239889965,
+  "Files_count": 116
+ },
+ "Files": [
+  {
+   "Path": "/home/avishrant/GitRepo/avishrantssh.github.io/index.html",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "/home/avishrant/GitRepo/avishrantssh.github.io/README.md",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "/home/avishrant/GitRepo/avishrantssh.github.io/serviceworker.js",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "/home/avishrant/GitRepo/avishrantssh.github.io/manifest.json",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  },
+  {
+   "Path": "",
+   "Licenses": null,
+   "Copyrights": null,
+   "Errors": ""
+  }
+ ]
+}

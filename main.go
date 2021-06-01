@@ -2,7 +2,6 @@ package main
 
 import "C"
 import (
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
@@ -10,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/avishrantssh/GoLicenseClassifier/classifier"
+	"github.com/avishrantssh/GoLicenseClassifier/result"
 )
 
 var ROOT = ""
@@ -25,7 +25,7 @@ var licensePath string
 var copyrightRE = regexp.MustCompile(`(?m)(?i:Copyright)\s+(?i:©\s+|\(c\)\s+)?(?:\d{2,4})(?:[-,]\s*\d{2,4})*,?\s*(?i:by)?\s*(.*?(?i:\s+Inc\.)?)[.,]?\s*(?i:All rights reserved\.?)?\s*$`)
 
 // Removing in-text special code literals
-var removeliteralRE = regexp.MustCompile(`\\n|\\f|\\r`)
+var endliteralRE = regexp.MustCompile(`\\n|\\f|\\r`)
 
 // Create a classifier instance and load base licenses
 func CreateClassifier() (*classifier.Classifier, error) {
@@ -34,21 +34,21 @@ func CreateClassifier() (*classifier.Classifier, error) {
 }
 
 //export FindMatch
-func FindMatch(root *C.char, fpaths *C.char) *C.char {
+func FindMatch(root *C.char, fpaths *C.char, getjson bool) *C.char {
 	ROOT = C.GoString(root)
 	if licensePath == "" {
 		licensePath = filepath.Join(ROOT, default_path)
 	}
 	patharr := GetPaths(C.GoString(fpaths))
-	status := make([]string, len(patharr))
-
-	// A simple channel implementation to lock function until execution is complete
+	res := new(result.JSON_struct)
+	res.Init(len(patharr))
 	c, err := CreateClassifier()
 
-	// fmt.Println("Finished Reading licenses")
 	if err != nil {
-		return C.CString("{ERROR:" + err.Error() + "}")
+		return C.CString("ERROR:" + err.Error())
 	}
+
+	// A simple channel implementation to lock function until execution is complete
 	var wg sync.WaitGroup
 	wg.Add(len(patharr))
 
@@ -56,31 +56,44 @@ func FindMatch(root *C.char, fpaths *C.char) *C.char {
 		// Spawn a thread for each iteration in the loop.
 		go func(index int, path string) {
 			defer wg.Done()
-
+			finfo := result.FileInfo{}
+			finfo.Path = path
 			b, err := ioutil.ReadFile(path)
 			// File Not Found
 			if err != nil {
-				status[index] = "{ERROR:" + err.Error() + "}"
+				finfo.Errors = err.Error()
 				return
 			}
 
 			data := []byte(string(b))
-
 			m := c.Match(data)
-			var tmp string
 			for i := 0; i < m.Len(); i++ {
-				tmp += fmt.Sprintf("(%s,%f,%d,%d,%d,%d),", m[i].Name, m[i].Confidence, m[i].StartLine, m[i].EndLine, m[i].StartTokenIndex, m[i].EndTokenIndex)
+				finfo.Licenses = append(finfo.Licenses, result.License{
+					Expression: m[i].Name,
+					Confidence: m[i].Confidence,
+					Startline:  m[i].StartLine,
+					Endline:    m[i].EndLine,
+					Starttoken: m[i].StartTokenIndex,
+					Endttoken:  m[i].EndTokenIndex})
 			}
 
 			cpInfo, holder := CopyrightInfo(string(b))
-			status[index] = "{PATH:" + path + "},{EXT:" + filepath.Ext(path) + "},{LICENSE:[" + tmp + "]},{COP:[" + cpInfo + "]}{COP-HOLDER:[" + holder + "]}"
-
+			if len(cpInfo) > 0 {
+				finfo.Copyrights = append(finfo.Copyrights, result.CpInfo{
+					Expression: cpInfo,
+					Holders:    holder})
+			}
+			res.AddFile(index, &finfo)
 		}(index, path)
 	}
 
 	// Wait for `wg.Done()` to be exectued the number of times specified in the `wg.Add()` call.
 	wg.Wait()
-	return C.CString(strings.Join(status, "\n"))
+	f_error := res.Finish("./test.json")
+	if f_error != nil {
+		return C.CString(f_error.Error())
+	}
+	return C.CString("Done")
 }
 
 // GetPaths function is used to convert new-line seperated filepaths to a string array.
@@ -105,19 +118,14 @@ func SetThreshold(thresh int) int {
 
 // CopyrightHolder finds a copyright notification, if it exists, and returns
 // the copyright holder.
-func CopyrightInfo(contents string) (string, string) {
-	str := removeliteralRE.ReplaceAllString(contents, "\n")
+func CopyrightInfo(contents string) ([]string, []string) {
+	str := endliteralRE.ReplaceAllString(contents, "\n")
 	matches := copyrightRE.FindAllStringSubmatch(str, -1)
-	var cpInfo, holder string
+	var cpInfo, holder []string
 	for _, match := range matches {
 		if len(match) == 2 {
-			if len(cpInfo) == 0 {
-				cpInfo = match[0]
-				holder = match[1]
-			} else {
-				cpInfo += "," + match[0]
-				holder += "," + match[1]
-			}
+			cpInfo = append(cpInfo, match[0])
+			holder = append(holder, match[1])
 		}
 	}
 	return cpInfo, holder
