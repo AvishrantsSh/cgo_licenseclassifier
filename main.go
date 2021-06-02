@@ -25,7 +25,7 @@ var licensePath string
 var copyrightRE = regexp.MustCompile(`(?m)(?i:Copyright)\s+(?i:©\s+|\(c\)\s+)?(?:\d{2,4})(?:[-,]\s*\d{2,4})*,?\s*(?i:by)?\s*(.*?(?i:\s+Inc\.)?)[.,]?\s*(?i:All rights reserved\.?)?\s*$`)
 
 // Removing in-text special code literals
-var endliteralRE = regexp.MustCompile(`\\n|\\f|\\r`)
+var endliteralRE = regexp.MustCompile(`\\n|\\f|\\r|\\0`)
 
 // Create a classifier instance and load base licenses
 func CreateClassifier() (*classifier.Classifier, error) {
@@ -72,17 +72,20 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) *C.char {
 				finfo.Licenses = append(finfo.Licenses, result.License{
 					Expression: m[i].Name,
 					Confidence: m[i].Confidence,
-					Startline:  m[i].StartLine,
-					Endline:    m[i].EndLine,
-					Starttoken: m[i].StartTokenIndex,
-					Endttoken:  m[i].EndTokenIndex})
+					StartLine:  m[i].StartLine,
+					EndLine:    m[i].EndLine,
+					StartToken: m[i].StartTokenIndex,
+					EndToken:   m[i].EndTokenIndex})
 			}
 
-			cpInfo, holder := CopyrightInfo(string(b))
-			if len(cpInfo) > 0 {
+			cpInfo, holder, tokens := CopyrightInfo(string(b))
+			for i := 0; i < len(cpInfo); i++ {
 				finfo.Copyrights = append(finfo.Copyrights, result.CpInfo{
-					Expression: cpInfo,
-					Holders:    holder})
+					Expression: cpInfo[i],
+					StartIndex: tokens[i][0],
+					EndIndex:   tokens[i][1],
+					Holder:     holder[i],
+				})
 			}
 			res.AddFile(index, &finfo)
 		}(index, path)
@@ -119,9 +122,11 @@ func SetThreshold(thresh int) int {
 
 // CopyrightHolder finds a copyright notification, if it exists, and returns
 // the copyright holder.
-func CopyrightInfo(contents string) ([]string, []string) {
+func CopyrightInfo(contents string) ([]string, []string, [][]int) {
 	str := endliteralRE.ReplaceAllString(contents, "\n")
 	matches := copyrightRE.FindAllStringSubmatch(str, -1)
+	tokens := copyrightRE.FindAllStringSubmatchIndex(str, -1)
+
 	var cpInfo, holder []string
 	for _, match := range matches {
 		if len(match) == 2 {
@@ -129,7 +134,7 @@ func CopyrightInfo(contents string) ([]string, []string) {
 			holder = append(holder, match[1])
 		}
 	}
-	return cpInfo, holder
+	return cpInfo, holder, tokens
 }
 
 func main() {}

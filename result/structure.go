@@ -29,14 +29,15 @@ type FileInfo struct {
 type License struct {
 	Expression string
 	Confidence float64
-	Startline  int
-	Endline    int
-	Starttoken int
-	Endttoken  int
+	StartLine  int
+	EndLine    int
+	StartToken int
+	EndToken   int
 }
 
 type CpInfo struct {
-	Expression []string
-	Holders    []string
-	// Timestamp  []string
+	Expression string
+	StartIndex int
+	EndIndex   int
+	Holder     string
 }
