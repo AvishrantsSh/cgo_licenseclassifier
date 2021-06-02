@@ -27,6 +27,9 @@ var copyrightRE = regexp.MustCompile(`(?m)(?i:Copyright)\s+(?i:©\s+|\(c\)\s+)?(
 // Removing in-text special code literals
 var endliteralRE = regexp.MustCompile(`\\n|\\f|\\r|\\0`)
 
+// Maximum Parallel Running Goroutines
+var MAX_ROUTINES = 10000
+
 // Create a classifier instance and load base licenses
 func CreateClassifier() (*classifier.Classifier, error) {
 	c := classifier.NewClassifier(defaultThreshold)
@@ -43,10 +46,12 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) *C.char {
 	res := new(result.JSON_struct)
 	res.Init(len(patharr))
 	c, err := CreateClassifier()
-
 	if err != nil {
 		return C.CString("ERROR:" + err.Error())
 	}
+
+	// Guard channel for ensuring thar no more than 'MAX_ROUTINES' run at any given time.
+	guard := make(chan struct{}, MAX_ROUTINES)
 
 	// A simple channel implementation to lock function until execution is complete
 	var wg sync.WaitGroup
@@ -54,15 +59,18 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) *C.char {
 
 	for index, path := range patharr {
 		// Spawn a thread for each iteration in the loop.
+		guard <- struct{}{}
 		go func(index int, path string) {
 			defer wg.Done()
-			finfo := result.FileInfo{}
+			finfo := new(result.FileInfo)
 			finfo.Path = path
 			b, err := ioutil.ReadFile(path)
 			// File Not Found
 			if err != nil {
 				finfo.Errors = err.Error()
-				res.AddFile(index, &finfo)
+				res.AddFile(index, finfo)
+				finfo = nil
+				<-guard
 				return
 			}
 
@@ -87,13 +95,17 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) *C.char {
 					Holder:     holder[i],
 				})
 			}
-			res.AddFile(index, &finfo)
+			res.AddFile(index, finfo)
+			finfo = nil
+			data = nil
+			<-guard
 		}(index, path)
 	}
 
 	// Wait for `wg.Done()` to be exectued the number of times specified in the `wg.Add()` call.
 	wg.Wait()
 	f_error := res.Finish(C.GoString(outputPath))
+	res = nil
 	if f_error != nil {
 		return C.CString(f_error.Error())
 	}
