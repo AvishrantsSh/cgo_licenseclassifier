@@ -21,6 +21,9 @@ var defaultThreshold = 0.8
 var default_path = "./classifier/default"
 var licensePath string
 
+// Normalize Copyright Literals
+var copyliteralRE = regexp.MustCompile(`&copy;|&copy|&#169;|&#xa9;|&#XA9;|u00A9|u00a9|\\xa9|\\XA9|\\251|©|/( C/)|(?i:/(c/))`)
+
 // Regexp for Detecting Copyrights
 var copyrightRE = regexp.MustCompile(`(?m)(?i:Copyright)\s+(?i:©\s+|\(c\)\s+)?(?:\d{2,4})(?:[-,]\s*\d{2,4})*,?\s*(?i:by)?\s*(.*?(?i:\s+Inc\.)?)[.,]?\s*(?i:All rights reserved\.?)?\s*$`)
 
@@ -136,8 +139,10 @@ func SetThreshold(thresh int) int {
 // the copyright holder.
 func CopyrightInfo(contents string) ([]string, []string, [][]int) {
 	str := endliteralRE.ReplaceAllString(contents, "\n")
-	matches := copyrightRE.FindAllStringSubmatch(str, -1)
-	tokens := copyrightRE.FindAllStringSubmatchIndex(str, -1)
+	normalized_str := copyliteralRE.ReplaceAllString(str, "(c)")
+
+	matches := copyrightRE.FindAllStringSubmatch(normalized_str, -1)
+	tokens := copyrightRE.FindAllStringSubmatchIndex(normalized_str, -1)
 
 	var cpInfo, holder []string
 	for _, match := range matches {
