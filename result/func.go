@@ -7,9 +7,10 @@ import (
 )
 
 // Initialize JSON_struct
-func (j *JSON_struct) Init(size int) {
+func (j *JSON_struct) Init(root string, size int) {
 	j.header = Header{
 		Tool_name:       "Golicense_classifier",
+		Root:            root,
 		Files_count:     size,
 		Start_timestamp: time.Now().UTC(),
 	}

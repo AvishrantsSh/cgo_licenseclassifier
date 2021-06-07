@@ -13,6 +13,7 @@ type JSON_struct struct {
 // Header Info struct
 type Header struct {
 	Tool_name       string
+	Root            string
 	Start_timestamp time.Time
 	End_timestamp   time.Time
 	Duration        float64

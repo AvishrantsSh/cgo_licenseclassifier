@@ -25,7 +25,7 @@ var licensePath string
 var copyliteralRE = regexp.MustCompile(`&copy;|&copy|&#169;|&#xa9;|&#XA9;|u00A9|u00a9|\\xa9|\\XA9|\\251|©|/( C/)|(?i:/(c/))`)
 
 // Regexp for Detecting Copyrights
-var copyrightRE = regexp.MustCompile(`(?m)(?i:Copyright)\s+(?i:©\s+|\(c\)\s+)?(?:\d{2,4})(?:[-,]\s*\d{2,4})*,?\s*(?i:by)?\s*(.*?(?i:\s+Inc\.)?)[.,]?\s*(?i:All rights reserved\.?)?\s*$`)
+var copyrightRE = regexp.MustCompile(`(?m)(?i:Copyright)\s+(?i:\(c\)\s+)?(?:\d{2,4})(?:[-,]\s*\d{2,4})*,?\s*(?i:by)?\s*(.*?(?i:\s+Inc\.)?)[.,-]?\s*(?i:All rights reserved\.?)?\s*$`)
 
 // Removing in-text special code literals
 var endliteralRE = regexp.MustCompile(`\\n|\\f|\\r|\\0`)
@@ -47,7 +47,7 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) *C.char {
 	}
 	patharr := GetPaths(C.GoString(fpaths))
 	res := new(result.JSON_struct)
-	res.Init(len(patharr))
+	res.Init(ROOT, len(patharr))
 	c, err := CreateClassifier()
 	if err != nil {
 		return C.CString("ERROR:" + err.Error())
@@ -147,8 +147,8 @@ func CopyrightInfo(contents string) ([]string, []string, [][]int) {
 	var cpInfo, holder []string
 	for _, match := range matches {
 		if len(match) == 2 {
-			cpInfo = append(cpInfo, match[0])
-			holder = append(holder, match[1])
+			cpInfo = append(cpInfo, strings.TrimSpace(match[0]))
+			holder = append(holder, strings.TrimSpace(match[1]))
 		}
 	}
 	return cpInfo, holder, tokens
