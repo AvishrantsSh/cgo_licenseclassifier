@@ -69,7 +69,6 @@ extern "C" {
 #endif
 
 extern char* FindMatch(char* root, char* fpaths, char* outputPath);
-extern GoInt LoadCustomLicenses(char* path);
 extern GoInt SetThreshold(GoInt thresh);
 
 #ifdef __cplusplus

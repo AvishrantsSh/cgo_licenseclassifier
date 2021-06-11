@@ -12,13 +12,11 @@ import (
 	"github.com/avishrantssh/GoLicenseClassifier/result"
 )
 
-var ROOT = ""
-
 // Default Threshold for Filtering the results
 var defaultThreshold = 0.8
 
 // Default Licenses Root Directory
-var default_path = "./classifier/default"
+var defaultPath = "./classifier/default"
 var licensePath string
 
 // Normalize Copyright Literals
@@ -31,9 +29,9 @@ var copyrightRE = regexp.MustCompile(`(?m)(?i:Copyright)\s+(?i:\(c\)\s+)?(?:\d{2
 var endliteralRE = regexp.MustCompile(`\\n|\\f|\\r|\\0`)
 
 // Maximum Parallel Running Goroutines
-var MAX_ROUTINES = 10000
+var maxRoutines = 10000
 
-// Create a classifier instance and load base licenses
+// CreateClassifier instantiates a classifier instance and loads base licenses
 func CreateClassifier() (*classifier.Classifier, error) {
 	c := classifier.NewClassifier(defaultThreshold)
 	return c, c.LoadLicenses(licensePath)
@@ -41,9 +39,9 @@ func CreateClassifier() (*classifier.Classifier, error) {
 
 //export FindMatch
 func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) *C.char {
-	ROOT = C.GoString(root)
+	ROOT := C.GoString(root)
 	if licensePath == "" {
-		licensePath = filepath.Join(ROOT, default_path)
+		licensePath = filepath.Join(ROOT, defaultPath)
 	}
 	patharr := GetPaths(C.GoString(fpaths))
 	res := new(result.JSON_struct)
@@ -53,10 +51,9 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) *C.char {
 		return C.CString("ERROR:" + err.Error())
 	}
 
-	// Guard channel for ensuring thar no more than 'MAX_ROUTINES' run at any given time.
-	guard := make(chan struct{}, MAX_ROUTINES)
+	// Guard channel for ensuring thar no more than 'maxRoutines' routines run at any given time.
+	guard := make(chan struct{}, maxRoutines)
 
-	// A simple channel implementation to lock function until execution is complete
 	var wg sync.WaitGroup
 	wg.Add(len(patharr))
 
@@ -105,12 +102,11 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) *C.char {
 		}(index, path)
 	}
 
-	// Wait for `wg.Done()` to be exectued the number of times specified in the `wg.Add()` call.
 	wg.Wait()
-	f_error := res.Finish(C.GoString(outputPath))
+	finishError := res.Finish(C.GoString(outputPath))
 	res = nil
-	if f_error != nil {
-		return C.CString(f_error.Error())
+	if finishError != nil {
+		return C.CString(finishError.Error())
 	}
 	return C.CString("Done")
 }
@@ -118,12 +114,6 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) *C.char {
 // GetPaths function is used to convert new-line seperated filepaths to a string array.
 func GetPaths(filepath string) []string {
 	return strings.SplitN(filepath, "\n", -1)
-}
-
-//export LoadCustomLicenses
-func LoadCustomLicenses(path *C.char) int {
-	licensePath = C.GoString(path)
-	return 1
 }
 
 //export SetThreshold
@@ -135,14 +125,14 @@ func SetThreshold(thresh int) int {
 	return 1
 }
 
-// CopyrightHolder finds a copyright notification, if it exists, and returns
+// CopyrightInfo finds a copyright notification, if it exists, and returns
 // the copyright holder.
 func CopyrightInfo(contents string) ([]string, []string, [][]int) {
 	str := endliteralRE.ReplaceAllString(contents, "\n")
-	normalized_str := copyliteralRE.ReplaceAllString(str, "(c)")
+	normalizedString := copyliteralRE.ReplaceAllString(str, "(c)")
 
-	matches := copyrightRE.FindAllStringSubmatch(normalized_str, -1)
-	tokens := copyrightRE.FindAllStringSubmatchIndex(normalized_str, -1)
+	matches := copyrightRE.FindAllStringSubmatch(normalizedString, -1)
+	tokens := copyrightRE.FindAllStringSubmatchIndex(normalizedString, -1)
 
 	var cpInfo, holder []string
 	for _, match := range matches {
