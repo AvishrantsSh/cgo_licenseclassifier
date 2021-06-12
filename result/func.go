@@ -10,7 +10,7 @@ import (
 func (j *JSON_struct) Init(root string, size int) {
 	j.header = Header{
 		Tool_name:       "Golicense_classifier",
-		Root:            root,
+		Input:           root,
 		Files_count:     size,
 		Start_timestamp: time.Now().UTC(),
 	}
@@ -36,8 +36,8 @@ func (j *JSON_struct) Finish(path string) error {
 // Custom Marshalling for JSON_struct
 func (j *JSON_struct) MarshalJSON() ([]byte, error) {
 	info, err := json.Marshal(struct {
-		Header Header
-		Files  []FileInfo
+		Header Header     `json:"header"`
+		Files  []FileInfo `json:"files"`
 	}{
 		Header: j.header,
 		Files:  j.files,

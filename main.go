@@ -82,8 +82,8 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) *C.char {
 					Confidence: m[i].Confidence,
 					StartLine:  m[i].StartLine,
 					EndLine:    m[i].EndLine,
-					StartToken: m[i].StartTokenIndex,
-					EndToken:   m[i].EndTokenIndex})
+					StartIndex: m[i].StartTokenIndex,
+					EndIndex:   m[i].EndTokenIndex})
 			}
 
 			cpInfo, holder, tokens := CopyrightInfo(string(b))
