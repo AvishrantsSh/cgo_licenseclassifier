@@ -62,7 +62,7 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) *C.char {
 		guard <- struct{}{}
 		go func(index int, path string) {
 			defer wg.Done()
-			finfo := new(result.FileInfo)
+			finfo := result.InitFile()
 			finfo.Path = path
 			b, err := ioutil.ReadFile(path)
 			// File Not Found

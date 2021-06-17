@@ -52,3 +52,11 @@ func (j *JSON_struct) MarshalJSON() ([]byte, error) {
 func (j *JSON_struct) AddFile(index int, file *FileInfo) {
 	j.files[index] = *file
 }
+
+func InitFile() *FileInfo {
+	return &FileInfo{
+		Licenses:   make([]License, 0),
+		Copyrights: make([]CpInfo, 0),
+		Expression: make([]string, 0),
+	}
+}
