@@ -78,12 +78,14 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) *C.char {
 			m := c.Match(data)
 			for i := 0; i < m.Len(); i++ {
 				finfo.Licenses = append(finfo.Licenses, result.License{
-					Expression: m[i].Name,
+					Key:        m[i].Name,
 					Confidence: m[i].Confidence,
 					StartLine:  m[i].StartLine,
 					EndLine:    m[i].EndLine,
 					StartIndex: m[i].StartTokenIndex,
 					EndIndex:   m[i].EndTokenIndex})
+
+				finfo.Expression = append(finfo.Expression, m[i].Name)
 			}
 
 			cpInfo, holder, tokens := CopyrightInfo(string(b))

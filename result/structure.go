@@ -23,12 +23,13 @@ type Header struct {
 type FileInfo struct {
 	Path       string    `json:"path"`
 	Licenses   []License `json:"licenses"`
+	Expression []string  `json:"license_expression"`
 	Copyrights []CpInfo  `json:"copyrights"`
 	Errors     string    `json:"errors"`
 }
 
 type License struct {
-	Expression string  `json:"expression"`
+	Key        string  `json:"key"`
 	Confidence float64 `json:"confidence"`
 	StartLine  int     `json:"start_line"`
 	EndLine    int     `json:"end_line"`
