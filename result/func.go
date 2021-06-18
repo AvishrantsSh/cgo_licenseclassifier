@@ -13,6 +13,7 @@ func (j *JSON_struct) Init(root string, size int) {
 		Input:           root,
 		Files_count:     size,
 		Start_timestamp: time.Now().UTC(),
+		Errors:          make([]string, 0),
 	}
 
 	j.files = make([]FileInfo, size)
@@ -36,10 +37,10 @@ func (j *JSON_struct) Finish(path string) error {
 // Custom Marshalling for JSON_struct
 func (j *JSON_struct) MarshalJSON() ([]byte, error) {
 	info, err := json.Marshal(struct {
-		Header Header     `json:"header"`
+		Header []Header   `json:"headers"`
 		Files  []FileInfo `json:"files"`
 	}{
-		Header: j.header,
+		Header: []Header{j.header},
 		Files:  j.files,
 	})
 
@@ -55,8 +56,9 @@ func (j *JSON_struct) AddFile(index int, file *FileInfo) {
 
 func InitFile() *FileInfo {
 	return &FileInfo{
-		Licenses:   make([]License, 0),
-		Copyrights: make([]CpInfo, 0),
-		Expression: make([]string, 0),
+		Licenses:    make([]License, 0),
+		Copyrights:  make([]CpInfo, 0),
+		Expression:  make([]string, 0),
+		Scan_Errors: make([]string, 0),
 	}
 }

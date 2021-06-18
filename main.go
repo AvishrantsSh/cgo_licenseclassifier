@@ -67,7 +67,7 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) *C.char {
 			b, err := ioutil.ReadFile(path)
 			// File Not Found
 			if err != nil {
-				finfo.Errors = err.Error()
+				finfo.Scan_Errors = append(finfo.Scan_Errors, err.Error())
 				res.AddFile(index, finfo)
 				finfo = nil
 				<-guard

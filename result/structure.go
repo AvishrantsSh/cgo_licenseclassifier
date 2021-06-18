@@ -18,14 +18,15 @@ type Header struct {
 	End_timestamp   time.Time `json:"end_timestamp"`
 	Duration        float64   `json:"duration"`
 	Files_count     int       `json:"files_count"`
+	Errors          []string  `json:"errors"`
 }
 
 type FileInfo struct {
-	Path       string    `json:"path"`
-	Licenses   []License `json:"licenses"`
-	Expression []string  `json:"license_expression"`
-	Copyrights []CpInfo  `json:"copyrights"`
-	Errors     string    `json:"errors"`
+	Path        string    `json:"path"`
+	Licenses    []License `json:"licenses"`
+	Expression  []string  `json:"license_expressions"`
+	Copyrights  []CpInfo  `json:"copyrights"`
+	Scan_Errors []string  `json:"scan_errors"`
 }
 
 type License struct {
