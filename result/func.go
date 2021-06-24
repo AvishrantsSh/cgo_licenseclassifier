@@ -15,8 +15,6 @@ func (j *JSON_struct) Init(root string, size int) {
 		Start_timestamp: time.Now().UTC(),
 		Errors:          make([]string, 0),
 	}
-
-	j.files = make([]FileInfo, size)
 }
 
 func (j *JSON_struct) Finish(path string) error {
@@ -50,12 +48,13 @@ func (j *JSON_struct) MarshalJSON() ([]byte, error) {
 	return info, nil
 }
 
-func (j *JSON_struct) AddFile(index int, file *FileInfo) {
-	j.files[index] = *file
+func (j *JSON_struct) AddFile(file *FileInfo) {
+	j.files = append(j.files, *file)
 }
 
-func InitFile() *FileInfo {
+func InitFile(path string) *FileInfo {
 	return &FileInfo{
+		Path:        path,
 		Licenses:    make([]License, 0),
 		Copyrights:  make([]CpInfo, 0),
 		Expression:  make([]string, 0),

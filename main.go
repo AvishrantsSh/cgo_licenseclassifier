@@ -3,6 +3,7 @@ package main
 import "C"
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -29,7 +30,13 @@ var copyrightRE = regexp.MustCompile(`(?m)(?i:Copyright)\s+(?i:\(c\)\s+)?(?:\d{2
 var endliteralRE = regexp.MustCompile(`\\n|\\f|\\r|\\0`)
 
 // Maximum Parallel Running Goroutines
-var maxRoutines = 10000
+var maxRoutines = 100
+
+type FileContent struct {
+	path string
+	data []byte
+	err  string
+}
 
 // CreateClassifier instantiates a classifier instance and loads base licenses
 func CreateClassifier() (*classifier.Classifier, error) {
@@ -37,45 +44,66 @@ func CreateClassifier() (*classifier.Classifier, error) {
 	return c, c.LoadLicenses(licensePath)
 }
 
+func isDirectory(path string) (bool, error) {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+
+	return fileInfo.IsDir(), err
+}
+
+func FileReader(fileList []string, fileCh chan FileContent) {
+	defer close(fileCh)
+	for _, path := range fileList {
+		res := new(FileContent)
+		res.path = path
+		data, err := ioutil.ReadFile(path)
+		if err != nil {
+			res.err = err.Error()
+		}
+		res.data = data
+		fileCh <- *res
+	}
+}
+
 //export FindMatch
-func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) *C.char {
+func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) int {
 	ROOT := C.GoString(root)
+	PATH := C.GoString(fpaths)
+
 	if licensePath == "" {
 		licensePath = filepath.Join(ROOT, defaultPath)
 	}
-	patharr := GetPaths(C.GoString(fpaths))
+
+	// Channels, Mutex and WaitGroups
+	var mutex sync.Mutex
+	var wg sync.WaitGroup
+	fileCh := make(chan FileContent, maxRoutines)
+
+	paths := GetPaths(PATH)
 	res := new(result.JSON_struct)
-	res.Init(ROOT, len(patharr))
+	res.Init(PATH, len(paths))
+
+	go FileReader(paths, fileCh)
+
 	c, err := CreateClassifier()
 	if err != nil {
-		return C.CString("ERROR:" + err.Error())
+		return -1
 	}
 
-	// Guard channel for ensuring thar no more than 'maxRoutines' routines run at any given time.
-	guard := make(chan struct{}, maxRoutines)
-
-	var wg sync.WaitGroup
-	wg.Add(len(patharr))
-
-	for index, path := range patharr {
-		// Spawn a thread for each iteration in the loop.
-		guard <- struct{}{}
-		go func(index int, path string) {
+	wg.Add(len(paths))
+	for file := range fileCh {
+		go func(f FileContent) {
 			defer wg.Done()
-			finfo := result.InitFile()
-			finfo.Path = path
-			b, err := ioutil.ReadFile(path)
-			// File Not Found
-			if err != nil {
-				finfo.Scan_Errors = append(finfo.Scan_Errors, err.Error())
-				res.AddFile(index, finfo)
-				finfo = nil
-				<-guard
+			finfo := result.InitFile(f.path)
+
+			if len(f.data) == 0 {
+				finfo.Scan_Errors = append(finfo.Scan_Errors, f.err)
+				res.AddFile(finfo)
 				return
 			}
-
-			data := []byte(string(b))
-			m := c.Match(data)
+			m := c.Match(f.data)
 			for i := 0; i < m.Len(); i++ {
 				finfo.Licenses = append(finfo.Licenses, result.License{
 					Key:        m[i].Name,
@@ -87,35 +115,28 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) *C.char {
 
 				finfo.Expression = append(finfo.Expression, m[i].Name)
 			}
-
-			cpInfo, holder, tokens := CopyrightInfo(string(b))
+			cpInfo, tokens := CopyrightInfo(string(f.data))
 			for i := 0; i < len(cpInfo); i++ {
 				finfo.Copyrights = append(finfo.Copyrights, result.CpInfo{
-					Expression: cpInfo[i],
+					Expression: cpInfo[i][0],
 					StartIndex: tokens[i][0],
 					EndIndex:   tokens[i][1],
-					Holder:     holder[i],
+					Holder:     cpInfo[i][1],
 				})
 			}
-			res.AddFile(index, finfo)
+			mutex.Lock()
+			res.AddFile(finfo)
+			mutex.Unlock()
 			finfo = nil
-			data = nil
-			<-guard
-		}(index, path)
+		}(file)
 	}
-
 	wg.Wait()
 	finishError := res.Finish(C.GoString(outputPath))
 	res = nil
 	if finishError != nil {
-		return C.CString(finishError.Error())
+		return -1
 	}
-	return C.CString("Done")
-}
-
-// GetPaths function is used to convert new-line seperated filepaths to a string array.
-func GetPaths(filepath string) []string {
-	return strings.SplitN(filepath, "\n", -1)
+	return 0
 }
 
 //export SetThreshold
@@ -127,23 +148,41 @@ func SetThreshold(thresh int) int {
 	return 1
 }
 
+// GetPaths function is used to convert new-line seperated filepaths to a string array.
+func GetPaths(fPath string) []string {
+	dir, _ := isDirectory(fPath)
+	fileList := []string{}
+	if dir {
+		filepath.Walk(fPath, func(path string, f os.FileInfo, err error) error {
+			dir, _ := isDirectory(path)
+			if dir {
+				return nil
+			}
+			fileList = append(fileList, path)
+			return nil
+		})
+	} else {
+		fileList = []string{fPath}
+	}
+	return fileList
+}
+
 // CopyrightInfo finds a copyright notification, if it exists, and returns
 // the copyright holder.
-func CopyrightInfo(contents string) ([]string, []string, [][]int) {
+func CopyrightInfo(contents string) ([][]string, [][]int) {
 	str := endliteralRE.ReplaceAllString(contents, "\n")
 	normalizedString := copyliteralRE.ReplaceAllString(str, "(c)")
 
 	matches := copyrightRE.FindAllStringSubmatch(normalizedString, -1)
 	tokens := copyrightRE.FindAllStringSubmatchIndex(normalizedString, -1)
 
-	var cpInfo, holder []string
+	var cpInfo [][]string
 	for _, match := range matches {
 		if len(match) == 2 {
-			cpInfo = append(cpInfo, strings.TrimSpace(match[0]))
-			holder = append(holder, strings.TrimSpace(match[1]))
+			cpInfo = append(cpInfo, []string{strings.TrimSpace(match[0]), strings.TrimSpace(match[1])})
 		}
 	}
-	return cpInfo, holder, tokens
+	return cpInfo, tokens
 }
 
 func main() {}
