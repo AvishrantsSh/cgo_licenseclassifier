@@ -2,5 +2,5 @@
 *.yml
 .env
 error.py
-libtest.py
+*.py
 *.json

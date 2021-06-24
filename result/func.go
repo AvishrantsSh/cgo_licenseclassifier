@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-// Initialize JSON_struct
-func (j *JSON_struct) Init(root string, size int) {
+func InitJSON(root string, size int) *JSON_struct {
+	j := new(JSON_struct)
 	j.header = Header{
 		Tool_name:       "Golicense_classifier",
 		Input:           root,
@@ -15,9 +15,10 @@ func (j *JSON_struct) Init(root string, size int) {
 		Start_timestamp: time.Now().UTC(),
 		Errors:          make([]string, 0),
 	}
+	return j
 }
 
-func (j *JSON_struct) Finish(path string) error {
+func (j *JSON_struct) WriteJSON(path string) error {
 	j.header.End_timestamp = time.Now().UTC()
 	j.header.Duration = float64(j.header.End_timestamp.Sub(j.header.Start_timestamp)) / float64(time.Second)
 	file, err := json.MarshalIndent(&j, "", " ")

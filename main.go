@@ -69,11 +69,10 @@ func FileReader(fileList []string, fileCh chan FileContent) {
 
 //export FindMatch
 func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) int {
-	ROOT := C.GoString(root)
 	PATH := C.GoString(fpaths)
 
 	if licensePath == "" {
-		licensePath = filepath.Join(ROOT, defaultPath)
+		licensePath = filepath.Join(C.GoString(root), defaultPath)
 	}
 
 	// Channels, Mutex and WaitGroups
@@ -82,8 +81,8 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) int {
 	fileCh := make(chan FileContent, maxRoutines)
 
 	paths := GetPaths(PATH)
-	res := new(result.JSON_struct)
-	res.Init(PATH, len(paths))
+	res := result.InitJSON(PATH, len(paths))
+	wg.Add(len(paths))
 
 	go FileReader(paths, fileCh)
 
@@ -92,13 +91,12 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) int {
 		return -1
 	}
 
-	wg.Add(len(paths))
 	for file := range fileCh {
 		go func(f FileContent) {
 			defer wg.Done()
 			finfo := result.InitFile(f.path)
 
-			if len(f.data) == 0 {
+			if len(f.err) > 0 {
 				finfo.Scan_Errors = append(finfo.Scan_Errors, f.err)
 				res.AddFile(finfo)
 				return
@@ -128,10 +126,12 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) int {
 			res.AddFile(finfo)
 			mutex.Unlock()
 			finfo = nil
+
 		}(file)
 	}
+
 	wg.Wait()
-	finishError := res.Finish(C.GoString(outputPath))
+	finishError := res.WriteJSON(C.GoString(outputPath))
 	res = nil
 	if finishError != nil {
 		return -1
@@ -139,16 +139,7 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) int {
 	return 0
 }
 
-//export SetThreshold
-func SetThreshold(thresh int) int {
-	if thresh < 0 || thresh > 100 {
-		return 1
-	}
-	defaultThreshold = float64(thresh) / 100.0
-	return 1
-}
-
-// GetPaths function is used to convert new-line seperated filepaths to a string array.
+// GetPaths crawls a given directory recursively and gives absolute path of all files
 func GetPaths(fPath string) []string {
 	dir, _ := isDirectory(fPath)
 	fileList := []string{}
@@ -183,6 +174,15 @@ func CopyrightInfo(contents string) ([][]string, [][]int) {
 		}
 	}
 	return cpInfo, tokens
+}
+
+//export SetThreshold
+func SetThreshold(thresh int) int {
+	if thresh < 0 || thresh > 100 {
+		return -1
+	}
+	defaultThreshold = float64(thresh) / 100.0
+	return 0
 }
 
 func main() {}
