@@ -68,7 +68,7 @@ func FileReader(fileList []string, fileCh chan FileContent) {
 }
 
 //export FindMatch
-func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) int {
+func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) bool {
 	PATH := C.GoString(fpaths)
 
 	if licensePath == "" {
@@ -88,7 +88,7 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) int {
 
 	c, err := CreateClassifier()
 	if err != nil {
-		return -1
+		return false
 	}
 
 	for file := range fileCh {
@@ -133,10 +133,7 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) int {
 	wg.Wait()
 	finishError := res.WriteJSON(C.GoString(outputPath))
 	res = nil
-	if finishError != nil {
-		return -1
-	}
-	return 0
+	return finishError == nil
 }
 
 // GetPaths crawls a given directory recursively and gives absolute path of all files
@@ -177,12 +174,12 @@ func CopyrightInfo(contents string) ([][]string, [][]int) {
 }
 
 //export SetThreshold
-func SetThreshold(thresh int) int {
+func SetThreshold(thresh int) bool {
 	if thresh < 0 || thresh > 100 {
-		return -1
+		return false
 	}
 	defaultThreshold = float64(thresh) / 100.0
-	return 0
+	return true
 }
 
 func main() {}
