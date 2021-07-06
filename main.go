@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/avishrantssh/GoLicenseClassifier/classifier"
 	"github.com/avishrantssh/GoLicenseClassifier/result"
@@ -113,10 +114,10 @@ func FindMatch(license *C.char, fpaths *C.char, outputPath *C.char) bool {
 			cpInfo, tokens := CopyrightInfo(string(f.data))
 			for i := 0; i < len(cpInfo); i++ {
 				finfo.Copyrights = append(finfo.Copyrights, result.CpInfo{
-					Expression: cpInfo[i][0],
+					Expression: validate(cpInfo[i][0]),
 					StartIndex: tokens[i][0],
 					EndIndex:   tokens[i][1],
-					Holder:     cpInfo[i][1],
+					Holder:     validate(cpInfo[i][1]),
 				})
 			}
 			mutex.Lock()
@@ -178,6 +179,18 @@ func SetThreshold(thresh int) bool {
 	}
 	defaultThreshold = float64(thresh) / 100.0
 	return true
+}
+
+// Validate Strings before saving
+func validate(test string) string {
+	v := make([]rune, 0, len(test))
+	for _, r := range test {
+		if r == utf8.RuneError || r == '\x00' {
+			break
+		}
+		v = append(v, r)
+	}
+	return string(v)
 }
 
 func main() {}
