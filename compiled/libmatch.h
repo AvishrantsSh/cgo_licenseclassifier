@@ -69,6 +69,7 @@ extern "C" {
 #endif
 
 extern GoUint8 FindMatch(char* license, char* fpaths, char* outputPath, GoInt maxRoutines);
+extern char* ScanFile(char* license, char* fpaths);
 extern GoUint8 SetThreshold(GoInt thresh);
 
 #ifdef __cplusplus

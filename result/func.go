@@ -62,3 +62,12 @@ func InitFile(path string) *FileInfo {
 		Scan_Errors: make([]string, 0),
 	}
 }
+
+func (file *FileInfo) GetJSONString() (string, error) {
+	jsonString, err := json.MarshalIndent(&file, "", " ")
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonString), nil
+}

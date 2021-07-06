@@ -138,6 +138,53 @@ func FindMatch(license *C.char, fpaths *C.char, outputPath *C.char, maxRoutines 
 	return finishError == nil
 }
 
+//export ScanFile
+func ScanFile(license *C.char, fpaths *C.char) *C.char {
+	PATH := C.GoString(fpaths)
+	licensePath = C.GoString(license)
+
+	data, fileErr := ioutil.ReadFile(PATH)
+	if fileErr != nil {
+		return C.CString("Error:" + fileErr.Error())
+	}
+
+	c, err := CreateClassifier()
+	if err != nil {
+		return C.CString("Error:" + err.Error())
+	}
+
+	finfo := result.InitFile(PATH)
+
+	m := c.Match(data)
+	for i := 0; i < m.Len(); i++ {
+		finfo.Licenses = append(finfo.Licenses, result.License{
+			Key:        m[i].Name,
+			Confidence: m[i].Confidence,
+			StartLine:  m[i].StartLine,
+			EndLine:    m[i].EndLine,
+			StartIndex: m[i].StartTokenIndex,
+			EndIndex:   m[i].EndTokenIndex})
+
+		finfo.Expression = append(finfo.Expression, m[i].Name)
+	}
+
+	cpInfo, tokens := CopyrightInfo(string(data))
+	for i := 0; i < len(cpInfo); i++ {
+		finfo.Copyrights = append(finfo.Copyrights, result.CpInfo{
+			Expression: validate(cpInfo[i][0]),
+			StartIndex: tokens[i][0],
+			EndIndex:   tokens[i][1],
+			Holder:     validate(cpInfo[i][1]),
+		})
+	}
+
+	jString, jErr := finfo.GetJSONString()
+	if jErr != nil {
+		return C.CString("Error:" + jErr.Error())
+	}
+	return C.CString(jString)
+}
+
 // GetPaths crawls a given directory recursively and gives absolute path of all files
 func GetPaths(fPath string) []string {
 	dir, _ := isDirectory(fPath)
