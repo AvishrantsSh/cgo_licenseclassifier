@@ -17,7 +17,6 @@ import (
 var defaultThreshold = 0.8
 
 // Default Licenses Root Directory
-var defaultPath = "./classifier/default"
 var licensePath string
 
 // Normalize Copyright Literals
@@ -30,7 +29,7 @@ var copyrightRE = regexp.MustCompile(`(?m)(?i:Copyright)\s+(?i:\(c\)\s+)?(?:\d{2
 var endliteralRE = regexp.MustCompile(`\\n|\\f|\\r|\\0`)
 
 // Maximum Parallel Running Goroutines
-var maxRoutines = 100
+const maxRoutines = 100
 
 type FileContent struct {
 	path string
@@ -53,7 +52,7 @@ func isDirectory(path string) (bool, error) {
 	return fileInfo.IsDir(), err
 }
 
-func FileReader(fileList []string, fileCh chan FileContent) {
+func FileReader(fileList []string, fileCh chan *FileContent) {
 	defer close(fileCh)
 	for _, path := range fileList {
 		res := new(FileContent)
@@ -63,22 +62,20 @@ func FileReader(fileList []string, fileCh chan FileContent) {
 			res.err = err.Error()
 		}
 		res.data = data
-		fileCh <- *res
+		fileCh <- res
 	}
 }
 
 //export FindMatch
-func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) bool {
+func FindMatch(license *C.char, fpaths *C.char, outputPath *C.char) bool {
 	PATH := C.GoString(fpaths)
 
-	if licensePath == "" {
-		licensePath = filepath.Join(C.GoString(root), defaultPath)
-	}
+	licensePath = C.GoString(license)
 
 	// Channels, Mutex and WaitGroups
 	var mutex sync.Mutex
 	var wg sync.WaitGroup
-	fileCh := make(chan FileContent, maxRoutines)
+	fileCh := make(chan *FileContent, maxRoutines)
 
 	paths := GetPaths(PATH)
 	res := result.InitJSON(PATH, len(paths))
@@ -92,7 +89,7 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) bool {
 	}
 
 	for file := range fileCh {
-		go func(f FileContent) {
+		go func(f *FileContent) {
 			defer wg.Done()
 			finfo := result.InitFile(f.path)
 
@@ -126,6 +123,7 @@ func FindMatch(root *C.char, fpaths *C.char, outputPath *C.char) bool {
 			res.AddFile(finfo)
 			mutex.Unlock()
 			finfo = nil
+			f = nil
 
 		}(file)
 	}
