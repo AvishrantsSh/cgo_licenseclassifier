@@ -29,9 +29,6 @@ var copyrightRE = regexp.MustCompile(`(?m)(?i:Copyright)\s+(?i:\(c\)\s+)?(?:\d{2
 // Removing in-text special code literals
 var endliteralRE = regexp.MustCompile(`\\n|\\f|\\r|\\0`)
 
-// Maximum Parallel Running Goroutines
-const maxRoutines = 100
-
 type FileContent struct {
 	path string
 	data []byte
@@ -68,7 +65,7 @@ func FileReader(fileList []string, fileCh chan *FileContent) {
 }
 
 //export FindMatch
-func FindMatch(license *C.char, fpaths *C.char, outputPath *C.char) bool {
+func FindMatch(license *C.char, fpaths *C.char, outputPath *C.char, maxRoutines int) bool {
 	PATH := C.GoString(fpaths)
 
 	licensePath = C.GoString(license)
@@ -76,7 +73,8 @@ func FindMatch(license *C.char, fpaths *C.char, outputPath *C.char) bool {
 	// Channels, Mutex and WaitGroups
 	var mutex sync.Mutex
 	var wg sync.WaitGroup
-	fileCh := make(chan *FileContent, maxRoutines)
+	fileCh := make(chan *FileContent, 10)
+	guard := make(chan struct{}, maxRoutines)
 
 	paths := GetPaths(PATH)
 	res := result.InitJSON(PATH, len(paths))
@@ -90,6 +88,9 @@ func FindMatch(license *C.char, fpaths *C.char, outputPath *C.char) bool {
 	}
 
 	for file := range fileCh {
+
+		// Wait for guard channel to free-up
+		guard <- struct{}{}
 		go func(f *FileContent) {
 			defer wg.Done()
 			finfo := result.InitFile(f.path)
@@ -125,6 +126,7 @@ func FindMatch(license *C.char, fpaths *C.char, outputPath *C.char) bool {
 			mutex.Unlock()
 			finfo = nil
 			f = nil
+			<-guard
 
 		}(file)
 	}
@@ -132,6 +134,7 @@ func FindMatch(license *C.char, fpaths *C.char, outputPath *C.char) bool {
 	wg.Wait()
 	finishError := res.WriteJSON(C.GoString(outputPath))
 	res = nil
+	close(guard)
 	return finishError == nil
 }
 
