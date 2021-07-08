@@ -35,10 +35,13 @@ type FileContent struct {
 	err  string
 }
 
-// CreateClassifier instantiates a classifier instance and loads base licenses
-func CreateClassifier() (*classifier.Classifier, error) {
-	c := classifier.NewClassifier(defaultThreshold)
-	return c, c.LoadLicenses(licensePath)
+var gclassifier *classifier.Classifier
+
+//export CreateClassifier
+func CreateClassifier(license *C.char) {
+	licensePath = C.GoString(license)
+	gclassifier = classifier.NewClassifier(defaultThreshold)
+	gclassifier.LoadLicenses(licensePath)
 }
 
 func isDirectory(path string) (bool, error) {
@@ -65,15 +68,13 @@ func FileReader(fileList []string, fileCh chan *FileContent) {
 }
 
 //export FindMatch
-func FindMatch(license *C.char, fpaths *C.char, outputPath *C.char, maxRoutines int) bool {
+func FindMatch(fpaths *C.char, outputPath *C.char, maxRoutines int) bool {
 	PATH := C.GoString(fpaths)
-
-	licensePath = C.GoString(license)
 
 	// Channels, Mutex and WaitGroups
 	var mutex sync.Mutex
 	var wg sync.WaitGroup
-	fileCh := make(chan *FileContent, 10)
+	fileCh := make(chan *FileContent, 5)
 	guard := make(chan struct{}, maxRoutines)
 
 	paths := GetPaths(PATH)
@@ -82,10 +83,10 @@ func FindMatch(license *C.char, fpaths *C.char, outputPath *C.char, maxRoutines 
 
 	go FileReader(paths, fileCh)
 
-	c, err := CreateClassifier()
-	if err != nil {
-		return false
-	}
+	// c, err := CreateClassifier()
+	// if err != nil {
+	// 	return false
+	// }
 
 	for file := range fileCh {
 
@@ -100,7 +101,7 @@ func FindMatch(license *C.char, fpaths *C.char, outputPath *C.char, maxRoutines 
 				res.AddFile(finfo)
 				return
 			}
-			m := c.Match(f.data)
+			m := gclassifier.Match(f.data)
 			for i := 0; i < m.Len(); i++ {
 				finfo.Licenses = append(finfo.Licenses, result.License{
 					Key:        m[i].Name,
@@ -139,23 +140,17 @@ func FindMatch(license *C.char, fpaths *C.char, outputPath *C.char, maxRoutines 
 }
 
 //export ScanFile
-func ScanFile(license *C.char, fpaths *C.char) *C.char {
+func ScanFile(fpaths *C.char) *C.char {
 	PATH := C.GoString(fpaths)
-	licensePath = C.GoString(license)
 
 	data, fileErr := ioutil.ReadFile(PATH)
 	if fileErr != nil {
 		return C.CString("Error:" + fileErr.Error())
 	}
 
-	c, err := CreateClassifier()
-	if err != nil {
-		return C.CString("Error:" + err.Error())
-	}
-
 	finfo := result.InitFile(PATH)
 
-	m := c.Match(data)
+	m := gclassifier.Match(data)
 	for i := 0; i < m.Len(); i++ {
 		finfo.Licenses = append(finfo.Licenses, result.License{
 			Key:        m[i].Name,
