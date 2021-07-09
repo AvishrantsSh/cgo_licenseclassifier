@@ -17,14 +17,11 @@ import (
 // Default Threshold for Filtering the results
 var defaultThreshold = 0.8
 
-// Default Licenses Root Directory
-var licensePath string
-
 // Normalize Copyright Literals
 var copyliteralRE = regexp.MustCompile(`&copy;|&copy|&#169;|&#xa9;|&#XA9;|u00A9|u00a9|\\xa9|\\XA9|\\251|©|\( C\)|(?i:\(c\))`)
 
 // Regexp for Detecting Copyrights
-var copyrightRE = regexp.MustCompile(`(?m)(?i:Copyright)\s+(?i:\(c\)\s+)?(?:\d{2,4})(?:[-,]\s*\d{2,4})*,?\s*(?i:by)?\s*(.*?(?i:\s+Inc\.)?)[.,-]?\s*(?i:All rights reserved\.?)?\s*$`)
+var copyrightRE = regexp.MustCompile(`(?m)(?i:Copyright)\s+(?i:\(c\)\s+)?(?:\d{2,4}\s*)(?:[-,]\s*\d{2,4})*,?\s*(?i:by)?\s*(.*?(?i:\s+Inc\.)?)[.,-]?\s*(?i:All rights reserved\.?)?\s*$`)
 
 // Removing in-text special code literals
 var endliteralRE = regexp.MustCompile(`\\n|\\f|\\r|\\0`)
@@ -39,7 +36,7 @@ var gclassifier *classifier.Classifier
 
 //export CreateClassifier
 func CreateClassifier(license *C.char) {
-	licensePath = C.GoString(license)
+	licensePath := C.GoString(license)
 	gclassifier = classifier.NewClassifier(defaultThreshold)
 	gclassifier.LoadLicenses(licensePath)
 }
@@ -173,6 +170,8 @@ func ScanFile(fpaths *C.char) *C.char {
 		})
 	}
 
+	data = nil
+	m = nil
 	jString, jErr := finfo.GetJSONString()
 	if jErr != nil {
 		return C.CString("Error:" + jErr.Error())
