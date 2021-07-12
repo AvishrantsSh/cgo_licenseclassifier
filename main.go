@@ -7,15 +7,11 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"sync"
 	"unicode/utf8"
 
 	"github.com/avishrantssh/GoLicenseClassifier/result"
 	classifier "github.com/google/licenseclassifier/v2"
 )
-
-// Default Threshold for Filtering the results
-var defaultThreshold = 0.8
 
 // Normalize Copyright Literals
 var copyliteralRE = regexp.MustCompile(`&copy;|&copy|&#169;|&#xa9;|&#XA9;|u00A9|u00a9|\\xa9|\\XA9|\\251|©|\( C\)|(?i:\(c\))`)
@@ -35,7 +31,7 @@ type FileContent struct {
 var gclassifier *classifier.Classifier
 
 //export CreateClassifier
-func CreateClassifier(license *C.char) {
+func CreateClassifier(license *C.char, defaultThreshold float64) {
 	licensePath := C.GoString(license)
 	gclassifier = classifier.NewClassifier(defaultThreshold)
 	gclassifier.LoadLicenses(licensePath)
@@ -64,117 +60,118 @@ func FileReader(fileList []string, fileCh chan *FileContent) {
 	}
 }
 
-//export FindMatch
-func FindMatch(fpaths *C.char, outputPath *C.char, maxRoutines int) bool {
-	PATH := C.GoString(fpaths)
+// Go routine implementation of Scan File Function
+// func FindMatch(fpaths *C.char, outputPath *C.char, maxRoutines int) bool {
+// 	PATH := C.GoString(fpaths)
 
-	// Channels, Mutex and WaitGroups
-	var mutex sync.Mutex
-	var wg sync.WaitGroup
-	fileCh := make(chan *FileContent, 5)
-	guard := make(chan struct{}, maxRoutines)
+// 	// Channels, Mutex and WaitGroups
+// 	var mutex sync.Mutex
+// 	var wg sync.WaitGroup
+// 	fileCh := make(chan *FileContent, 5)
+// 	guard := make(chan struct{}, maxRoutines)
 
-	paths := GetPaths(PATH)
-	res := result.InitJSON(PATH, len(paths))
-	wg.Add(len(paths))
+// 	paths := GetPaths(PATH)
+// 	res := result.InitJSON(PATH, len(paths))
+// 	wg.Add(len(paths))
 
-	go FileReader(paths, fileCh)
+// 	go FileReader(paths, fileCh)
 
-	// c, err := CreateClassifier()
-	// if err != nil {
-	// 	return false
-	// }
+// 	// c, err := CreateClassifier()
+// 	// if err != nil {
+// 	// 	return false
+// 	// }
 
-	for file := range fileCh {
+// 	for file := range fileCh {
 
-		// Wait for guard channel to free-up
-		guard <- struct{}{}
-		go func(f *FileContent) {
-			defer wg.Done()
-			finfo := result.InitFile(f.path)
+// 		// Wait for guard channel to free-up
+// 		guard <- struct{}{}
+// 		go func(f *FileContent) {
+// 			defer wg.Done()
+// 			finfo := result.InitFile(f.path)
 
-			if len(f.err) > 0 {
-				finfo.Scan_Errors = append(finfo.Scan_Errors, f.err)
-				res.AddFile(finfo)
-				return
-			}
-			m := gclassifier.Match(f.data)
-			for i := 0; i < m.Len(); i++ {
-				finfo.Licenses = append(finfo.Licenses, result.License{
-					Key:        m[i].Name,
-					Confidence: m[i].Confidence,
-					StartLine:  m[i].StartLine,
-					EndLine:    m[i].EndLine,
-					StartIndex: m[i].StartTokenIndex,
-					EndIndex:   m[i].EndTokenIndex})
+// 			if len(f.err) > 0 {
+// 				finfo.Scan_Error = f.err
+// 				res.AddFile(finfo)
+// 				return
+// 			}
+// 			m := gclassifier.Match(f.data)
+// 			for i := 0; i < m.Len(); i++ {
+// 				finfo.Licenses = append(finfo.Licenses, result.License{
+// 					Key:        m[i].Name,
+// 					Confidence: m[i].Confidence,
+// 					StartLine:  m[i].StartLine,
+// 					EndLine:    m[i].EndLine,
+// 					StartIndex: m[i].StartTokenIndex,
+// 					EndIndex:   m[i].EndTokenIndex})
 
-				finfo.Expression = append(finfo.Expression, m[i].Name)
-			}
-			cpInfo, tokens := CopyrightInfo(string(f.data))
-			for i := 0; i < len(cpInfo); i++ {
-				finfo.Copyrights = append(finfo.Copyrights, result.CpInfo{
-					Expression: validate(cpInfo[i][0]),
-					StartIndex: tokens[i][0],
-					EndIndex:   tokens[i][1],
-					Holder:     validate(cpInfo[i][1]),
-				})
-			}
-			mutex.Lock()
-			res.AddFile(finfo)
-			mutex.Unlock()
-			finfo = nil
-			f = nil
-			<-guard
+// 				finfo.Expression = append(finfo.Expression, m[i].Name)
+// 			}
+// 			cpInfo, tokens := CopyrightInfo(string(f.data))
+// 			for i := 0; i < len(cpInfo); i++ {
+// 				finfo.Copyrights = append(finfo.Copyrights, result.CpInfo{
+// 					Expression: validate(cpInfo[i][0]),
+// 					StartIndex: tokens[i][0],
+// 					EndIndex:   tokens[i][1],
+// 					Holder:     validate(cpInfo[i][1]),
+// 				})
+// 			}
+// 			mutex.Lock()
+// 			res.AddFile(finfo)
+// 			mutex.Unlock()
+// 			finfo = nil
+// 			f = nil
+// 			<-guard
 
-		}(file)
-	}
+// 		}(file)
+// 	}
 
-	wg.Wait()
-	finishError := res.WriteJSON(C.GoString(outputPath))
-	res = nil
-	close(guard)
-	return finishError == nil
-}
+// 	wg.Wait()
+// 	finishError := res.WriteJSON(C.GoString(outputPath))
+// 	res = nil
+// 	close(guard)
+// 	return finishError == nil
+// }
 
 //export ScanFile
 func ScanFile(fpaths *C.char) *C.char {
 	PATH := C.GoString(fpaths)
+	finfo := result.InitFile(PATH)
 
 	data, fileErr := ioutil.ReadFile(PATH)
 	if fileErr != nil {
-		return C.CString("Error:" + fileErr.Error())
+		finfo.Scan_Error = fileErr.Error()
+	} else {
+		match := gclassifier.Match(data)
+		for i := 0; i < match.Len(); i++ {
+			finfo.Licenses = append(finfo.Licenses, result.License{
+				Key:        match[i].Name,
+				Score:      match[i].Confidence,
+				StartLine:  match[i].StartLine,
+				EndLine:    match[i].EndLine,
+				StartIndex: match[i].StartTokenIndex,
+				EndIndex:   match[i].EndTokenIndex})
+
+			finfo.LicenseExpressions = append(finfo.LicenseExpressions, match[i].Name)
+		}
+
+		cpInfo, tokens := CopyrightInfo(string(data))
+		for i := 0; i < len(cpInfo); i++ {
+			finfo.Copyrights = append(finfo.Copyrights, result.CpInfo{
+				Notification: validate(cpInfo[i][0]),
+				StartIndex:   tokens[i][0],
+				EndIndex:     tokens[i][1],
+				Holder:       validate(cpInfo[i][1]),
+			})
+		}
+		match = nil
+		cpInfo = nil
+		tokens = nil
 	}
-
-	finfo := result.InitFile(PATH)
-
-	m := gclassifier.Match(data)
-	for i := 0; i < m.Len(); i++ {
-		finfo.Licenses = append(finfo.Licenses, result.License{
-			Key:        m[i].Name,
-			Confidence: m[i].Confidence,
-			StartLine:  m[i].StartLine,
-			EndLine:    m[i].EndLine,
-			StartIndex: m[i].StartTokenIndex,
-			EndIndex:   m[i].EndTokenIndex})
-
-		finfo.Expression = append(finfo.Expression, m[i].Name)
-	}
-
-	cpInfo, tokens := CopyrightInfo(string(data))
-	for i := 0; i < len(cpInfo); i++ {
-		finfo.Copyrights = append(finfo.Copyrights, result.CpInfo{
-			Expression: validate(cpInfo[i][0]),
-			StartIndex: tokens[i][0],
-			EndIndex:   tokens[i][1],
-			Holder:     validate(cpInfo[i][1]),
-		})
-	}
-
 	data = nil
-	m = nil
+
 	jString, jErr := finfo.GetJSONString()
 	if jErr != nil {
-		return C.CString("Error:" + jErr.Error())
+		return C.CString("{\"error\":" + jErr.Error() + "}")
 	}
 	return C.CString(jString)
 }
@@ -214,15 +211,6 @@ func CopyrightInfo(contents string) ([][]string, [][]int) {
 		}
 	}
 	return cpInfo, tokens
-}
-
-//export SetThreshold
-func SetThreshold(thresh int) bool {
-	if thresh < 0 || thresh > 100 {
-		return false
-	}
-	defaultThreshold = float64(thresh) / 100.0
-	return true
 }
 
 // Validate Strings before saving

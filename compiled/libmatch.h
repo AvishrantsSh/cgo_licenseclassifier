@@ -68,10 +68,8 @@ typedef struct { void *data; GoInt len; GoInt cap; } GoSlice;
 extern "C" {
 #endif
 
-extern void CreateClassifier(char* license);
-extern GoUint8 FindMatch(char* fpaths, char* outputPath, GoInt maxRoutines);
+extern void CreateClassifier(char* license, GoFloat64 defaultThreshold);
 extern char* ScanFile(char* fpaths);
-extern GoUint8 SetThreshold(GoInt thresh);
 
 #ifdef __cplusplus
 }
