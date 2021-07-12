@@ -10,8 +10,8 @@ import (
 	"sync"
 	"unicode/utf8"
 
-	"github.com/avishrantssh/GoLicenseClassifier/classifier"
 	"github.com/avishrantssh/GoLicenseClassifier/result"
+	classifier "github.com/google/licenseclassifier/v2"
 )
 
 // Default Threshold for Filtering the results
