@@ -46,6 +46,14 @@ func isDirectory(path string) (bool, error) {
 	return fileInfo.IsDir(), err
 }
 
+func isLargeForScan(path string, size int) (bool, error) {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+	return int(fileInfo.Size()/1000000) > size, nil
+}
+
 func FileReader(fileList []string, fileCh chan *FileContent) {
 	defer close(fileCh)
 	for _, path := range fileList {
@@ -133,42 +141,65 @@ func FileReader(fileList []string, fileCh chan *FileContent) {
 // }
 
 //export ScanFile
-func ScanFile(fpaths *C.char) *C.char {
+func ScanFile(fpaths *C.char, maxSize int) *C.char {
 	PATH := C.GoString(fpaths)
 	finfo := result.InitFile(PATH)
 
-	data, fileErr := ioutil.ReadFile(PATH)
-	if fileErr != nil {
-		finfo.Scan_Error = fileErr.Error()
-	} else {
-		match := gclassifier.Match(data)
-		for i := 0; i < match.Len(); i++ {
-			finfo.Licenses = append(finfo.Licenses, result.License{
-				Key:        match[i].Name,
-				Score:      match[i].Confidence,
-				StartLine:  match[i].StartLine,
-				EndLine:    match[i].EndLine,
-				StartIndex: match[i].StartTokenIndex,
-				EndIndex:   match[i].EndTokenIndex})
+	isLarge := false
+	var error error
 
-			finfo.LicenseExpressions = append(finfo.LicenseExpressions, match[i].Name)
+	if maxSize > 0 {
+		isLarge, error = isLargeForScan(PATH, maxSize)
+		if error != nil {
+			finfo.Scan_Errors = append(finfo.Scan_Errors, error.Error())
 		}
-
-		cpInfo, tokens := CopyrightInfo(string(data))
-		for i := 0; i < len(cpInfo); i++ {
-			finfo.Copyrights = append(finfo.Copyrights, result.CpInfo{
-				Notification: validate(cpInfo[i][0]),
-				StartIndex:   tokens[i][0],
-				EndIndex:     tokens[i][1],
-				Holder:       validate(cpInfo[i][1]),
-			})
-		}
-		match = nil
-		cpInfo = nil
-		tokens = nil
 	}
-	data = nil
 
+	if isLarge {
+		finfo.Scan_Errors = append(finfo.Scan_Errors, "File Exceeds Maximum Size")
+
+	} else {
+		data, fileErr := ioutil.ReadFile(PATH)
+		if fileErr != nil {
+			finfo.Scan_Errors = append(finfo.Scan_Errors, fileErr.Error())
+		} else {
+			match := gclassifier.Match(data)
+			for i := 0; i < match.Len(); i++ {
+				finfo.Licenses = append(finfo.Licenses, result.Licenses{
+					Key:        match[i].Name,
+					Score:      match[i].Confidence,
+					StartLine:  match[i].StartLine,
+					EndLine:    match[i].EndLine,
+					StartIndex: match[i].StartTokenIndex,
+					EndIndex:   match[i].EndTokenIndex})
+
+				finfo.LicenseExpressions = append(finfo.LicenseExpressions, match[i].Name)
+			}
+
+			cpInfo, tokens := CopyrightInfo(string(data))
+			for i := 0; i < len(cpInfo); i++ {
+				finfo.Copyrights = append(finfo.Copyrights, result.Copyrights{
+					Notification: validate(cpInfo[i][0]),
+					// StartLine:    getLineNumber(data, tokens[i][0]),
+					// EndLine:      getLineNumber(data, tokens[i][1]),
+					StartIndex: tokens[i][0],
+					EndIndex:   tokens[i][1],
+				})
+
+				finfo.Holders = append(finfo.Holders, result.Holder{
+					Holder: validate(cpInfo[i][1]),
+					// StartLine:  getLineNumber(data, tokens[i][2]),
+					// EndLine:    getLineNumber(data, tokens[i][3]),
+					StartIndex: tokens[i][2],
+					EndIndex:   tokens[i][3],
+				})
+			}
+			match = nil
+			cpInfo = nil
+			tokens = nil
+		}
+		data = nil
+	}
 	jString, jErr := finfo.GetJSONString()
 	if jErr != nil {
 		return C.CString("{\"error\":" + jErr.Error() + "}")
@@ -204,17 +235,18 @@ func CopyrightInfo(contents string) ([][]string, [][]int) {
 	matches := copyrightRE.FindAllStringSubmatch(normalizedString, -1)
 	tokens := copyrightRE.FindAllStringSubmatchIndex(normalizedString, -1)
 
-	var cpInfo [][]string
-	for _, match := range matches {
-		if len(match) == 2 {
-			cpInfo = append(cpInfo, []string{strings.TrimSpace(match[0]), strings.TrimSpace(match[1])})
-		}
-	}
-	return cpInfo, tokens
+	// var cpInfo [][]string
+	// for _, match := range matches {
+	// 	if len(match) == 2 {
+	// 		cpInfo = append(cpInfo, []string{strings.TrimSpace(match[0]), strings.TrimSpace(match[1])})
+	// 	}
+	// }
+	return matches, tokens
 }
 
 // Validate Strings before saving
 func validate(test string) string {
+	test = strings.TrimSpace(test)
 	v := make([]rune, 0, len(test))
 	for _, r := range test {
 		if r == utf8.RuneError || r == '\x00' {
@@ -225,4 +257,15 @@ func validate(test string) string {
 	return string(v)
 }
 
+func getLineNumber(data []byte, index int) int {
+	count := 1
+	lineSep := []byte{'\n'}
+	for i := 0; i < index; i++ {
+		if data[i] == lineSep[0] {
+			count++
+		}
+	}
+
+	return count
+}
 func main() {}

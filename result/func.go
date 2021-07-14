@@ -7,9 +7,10 @@ import (
 func InitFile(path string) *FileInfo {
 	return &FileInfo{
 		Path:               path,
-		Licenses:           make([]License, 0),
-		Copyrights:         make([]CpInfo, 0),
+		Licenses:           make([]Licenses, 0),
+		Copyrights:         make([]Copyrights, 0),
 		LicenseExpressions: make([]string, 0),
+		Scan_Errors:        make([]string, 0),
 	}
 }
 
