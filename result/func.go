@@ -9,6 +9,7 @@ func InitFile(path string) *FileInfo {
 		Path:               path,
 		Licenses:           make([]Licenses, 0),
 		Copyrights:         make([]Copyrights, 0),
+		Holders:            make([]Holder, 0),
 		LicenseExpressions: make([]string, 0),
 		Scan_Errors:        make([]string, 0),
 	}

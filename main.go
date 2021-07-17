@@ -2,6 +2,7 @@ package main
 
 import "C"
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -156,7 +157,7 @@ func ScanFile(fpaths *C.char, maxSize int) *C.char {
 	}
 
 	if isLarge {
-		finfo.Scan_Errors = append(finfo.Scan_Errors, "File Exceeds Maximum Size")
+		finfo.Scan_Errors = append(finfo.Scan_Errors, fmt.Sprint("File exceeds maximum size of ", maxSize))
 
 	} else {
 		data, fileErr := ioutil.ReadFile(PATH)
