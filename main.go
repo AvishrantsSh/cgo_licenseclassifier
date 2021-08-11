@@ -1,8 +1,12 @@
 package main
 
+/*
+#include <stdlib.h>
+*/
 import "C"
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -142,7 +146,11 @@ func FileReader(fileList []string, fileCh chan *FileContent) {
 // }
 
 //export ScanFile
-func ScanFile(fpaths *C.char, maxSize int) *C.char {
+func ScanFile(fpaths *C.char, maxSize int, useBuffer bool) *C.char {
+	if useBuffer {
+		return BuffScanFile(fpaths, maxSize)
+	}
+
 	PATH := C.GoString(fpaths)
 	finfo := result.InitFile(PATH)
 
@@ -200,6 +208,71 @@ func ScanFile(fpaths *C.char, maxSize int) *C.char {
 			tokens = nil
 		}
 		data = nil
+	}
+	jString, jErr := finfo.GetJSONString()
+	if jErr != nil {
+		return C.CString("{\"error\":" + jErr.Error() + "}")
+	}
+	return C.CString(jString)
+}
+
+// BuffScanFile for using a buffered file scanning and analysis
+func BuffScanFile(fpaths *C.char, bufferSize int) *C.char {
+	PATH := C.GoString(fpaths)
+	finfo := result.InitFile(PATH)
+
+	file, err := os.Open(PATH)
+
+	if err != nil {
+		finfo.Scan_Errors = append(finfo.Scan_Errors, err.Error())
+	} else {
+		defer file.Close()
+		buffer := make([]byte, bufferSize*1000000)
+		for {
+			bytesread, err := file.Read(buffer)
+			if err != nil {
+				if err != io.EOF {
+					finfo.Scan_Errors = append(finfo.Scan_Errors, err.Error())
+				}
+				// If reached end of file
+				break
+			}
+
+			match := gclassifier.Match(buffer[:bytesread])
+			for i := 0; i < match.Len(); i++ {
+				finfo.Licenses = append(finfo.Licenses, result.Licenses{
+					Key:        match[i].Name,
+					Score:      match[i].Confidence,
+					StartLine:  match[i].StartLine,
+					EndLine:    match[i].EndLine,
+					StartIndex: match[i].StartTokenIndex,
+					EndIndex:   match[i].EndTokenIndex})
+
+				finfo.LicenseExpressions = append(finfo.LicenseExpressions, match[i].Name)
+			}
+
+			cpInfo, tokens := CopyrightInfo(string(buffer[:bytesread]))
+			for i := 0; i < len(cpInfo); i++ {
+				finfo.Copyrights = append(finfo.Copyrights, result.Copyrights{
+					Notification: validate(cpInfo[i][0]),
+					// StartLine:    getLineNumber(data, tokens[i][0]),
+					// EndLine:      getLineNumber(data, tokens[i][1]),
+					StartIndex: tokens[i][0],
+					EndIndex:   tokens[i][1],
+				})
+
+				finfo.Holders = append(finfo.Holders, result.Holder{
+					Holder: validate(cpInfo[i][1]),
+					// StartLine:  getLineNumber(data, tokens[i][2]),
+					// EndLine:    getLineNumber(data, tokens[i][3]),
+					StartIndex: tokens[i][2],
+					EndIndex:   tokens[i][3],
+				})
+			}
+			match = nil
+			cpInfo = nil
+			tokens = nil
+		}
 	}
 	jString, jErr := finfo.GetJSONString()
 	if jErr != nil {

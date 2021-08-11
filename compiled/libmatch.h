@@ -19,6 +19,11 @@ typedef struct { const char *p; ptrdiff_t n; } _GoString_;
 /* Start of preamble from import "C" comments.  */
 
 
+#line 3 "main.go"
+
+#include <stdlib.h>
+
+#line 1 "cgo-generated-wrapper"
 
 
 /* End of preamble from import "C" comments.  */
@@ -69,7 +74,7 @@ extern "C" {
 #endif
 
 extern void CreateClassifier(char* license, GoFloat64 defaultThreshold);
-extern char* ScanFile(char* fpaths, GoInt maxSize);
+extern char* ScanFile(char* fpaths, GoInt maxSize, GoUint8 useBuffer);
 
 #ifdef __cplusplus
 }

@@ -4,3 +4,10 @@
 error.py
 *.py
 *.json
+
+# Environment
+lib
+lib64
+share
+include
+bin
