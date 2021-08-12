@@ -11,3 +11,4 @@ lib64
 share
 include
 bin
+pyvenv.cfg
