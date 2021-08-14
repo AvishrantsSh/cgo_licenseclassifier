@@ -1,5 +1,5 @@
-Ctypes License Classifier
-==================
+Google License Classifier cgo binding
+=====================================
 **Note:** This library is a derivative work of [Google LicenseClassifier](https://github.com/google/licenseclassifier).
 
 This is an extension of Google LicenseClassifier v2, which exposes the underlying functionality of the License Classifier in the form of shared library that can be integrated with other tools to provide license classification and copyright detection.
