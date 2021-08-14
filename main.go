@@ -9,8 +9,10 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"unicode/utf8"
 
 	"github.com/avishrantssh/GoLicenseClassifier/result"
@@ -194,6 +196,68 @@ func BuffScanFile(fpaths *C.char, bufferSize int) *C.char {
 	return C.CString(jString)
 }
 
+// Go routine implementation of Scan File Function
+func FindMatch(fpaths *C.char, outputPath *C.char, maxRoutines int) bool {
+	PATH := C.GoString(fpaths)
+
+	// Channels, and WaitGroups
+	var wg sync.WaitGroup
+	fileCh := make(chan *FileContent, 5)
+	guard := make(chan struct{}, maxRoutines)
+
+	paths := GetPaths(PATH)
+	wg.Add(len(paths))
+
+	go FileReader(paths, fileCh)
+
+	for file := range fileCh {
+
+		// Wait for guard channel to free-up
+		guard <- struct{}{}
+		go func(f *FileContent) {
+			defer wg.Done()
+			finfo := result.InitFile(f.path)
+
+			m := gclassifier.Match(f.data)
+			for i := 0; i < m.Len(); i++ {
+				finfo.Licenses = append(finfo.Licenses, result.Licenses{
+					Key:        m[i].Name,
+					Score:      m[i].Confidence,
+					StartLine:  m[i].StartLine,
+					EndLine:    m[i].EndLine,
+					StartIndex: m[i].StartTokenIndex,
+					EndIndex:   m[i].EndTokenIndex})
+
+				finfo.LicenseExpressions = append(finfo.LicenseExpressions, m[i].Name)
+			}
+			cpInfo, tokens := CopyrightInfo(string(f.data))
+			for i := 0; i < len(cpInfo); i++ {
+				finfo.Copyrights = append(finfo.Copyrights, result.Copyrights{
+					Notification: validate(cpInfo[i][0]),
+					StartIndex:   tokens[i][0],
+					EndIndex:     tokens[i][1],
+				})
+
+				finfo.Holders = append(finfo.Holders, result.Holder{
+					Holder: validate(cpInfo[i][1]),
+					// StartLine:  getLineNumber(data, tokens[i][2]),
+					// EndLine:    getLineNumber(data, tokens[i][3]),
+					StartIndex: tokens[i][2],
+					EndIndex:   tokens[i][3],
+				})
+			}
+			finfo = nil
+			f = nil
+			<-guard
+
+		}(file)
+	}
+
+	wg.Wait()
+	close(guard)
+	return true
+}
+
 // CopyrightInfo finds a copyright notification, if it exists, and returns
 // the copyright holder.
 func CopyrightInfo(contents string) ([][]string, [][]int) {
@@ -217,6 +281,39 @@ func validate(test string) string {
 		v = append(v, r)
 	}
 	return string(v)
+}
+
+func FileReader(fileList []string, fileCh chan *FileContent) {
+	defer close(fileCh)
+	for _, path := range fileList {
+		res := new(FileContent)
+		res.path = path
+		data, err := ioutil.ReadFile(path)
+		if err != nil {
+			res.err = err.Error()
+		}
+		res.data = data
+		fileCh <- res
+	}
+}
+
+// GetPaths crawls a given directory recursively and gives absolute path of all files
+func GetPaths(fPath string) []string {
+	dir, _ := isDirectory(fPath)
+	fileList := []string{}
+	if dir {
+		filepath.Walk(fPath, func(path string, f os.FileInfo, err error) error {
+			dir, _ := isDirectory(path)
+			if dir {
+				return nil
+			}
+			fileList = append(fileList, path)
+			return nil
+		})
+	} else {
+		fileList = []string{fPath}
+	}
+	return fileList
 }
 
 func main() {}
