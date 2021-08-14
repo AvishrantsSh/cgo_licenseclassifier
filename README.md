@@ -2,11 +2,11 @@ Google License Classifier cgo binding
 =====================================
 **Note:** This library is a derivative work of [Google LicenseClassifier](https://github.com/google/licenseclassifier).
 
-This is an extension of Google LicenseClassifier v2, which exposes the underlying functionality of the License Classifier in the form of shared library that can be integrated with other tools to provide license classification and copyright detection.
+This is an extension of Google LicenseClassifier v2, which exposes the underlying functionality of the License Classifier in the form of shared library, which can further be integrated with other applications and tools to provide license classification and copyright detection.
 
 Installation
 ------------
-_Note: Currently, this package only supports Linux Platform. Work is in progress for Windows and Mac._
+_**Note:** Currently, this shared library has been built only for Linux Platform. Work is in progress for other platforms._
 
 Go ahead and setup your environment as
 ```sh
@@ -16,10 +16,31 @@ go get .
 
 Usage
 -----
+The [main.go](main.go) file contains several functions to detect license expressions in various files depending upon the requirements.
+
+1. `ScanFile`
+
+    This function scans the given file and returns the license expression and copyright notifications found in the file.
+
+2. `BuffScanFile`
+
+    This function is similar to `ScanFile` but it scans the file in a buffer. Suitable for high memory applications.
+
+3. `CopyrightInfo`
+
+    CopyrightInfo scans a given text/string and finds valid copyright notifications. Migrated from Google License Classifier v1.
+
+Building Shared Library
+-----------------------
 To build your own shared library, you can use the following `make` command
 ```sh
 make build
 ```
+
+Or if you use an OS other than linux, you can use the following `build` command
+```sh
+go build -o compiled/libclassifier.so -buildmode=c-shared
+``` 
 
 Interfacing Example
 -------------------

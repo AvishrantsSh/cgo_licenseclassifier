@@ -9,7 +9,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -58,92 +57,6 @@ func isLargeForScan(path string, size int) (bool, error) {
 	}
 	return int(fileInfo.Size()/1000000) > size, nil
 }
-
-func FileReader(fileList []string, fileCh chan *FileContent) {
-	defer close(fileCh)
-	for _, path := range fileList {
-		res := new(FileContent)
-		res.path = path
-		data, err := ioutil.ReadFile(path)
-		if err != nil {
-			res.err = err.Error()
-		}
-		res.data = data
-		fileCh <- res
-	}
-}
-
-// Go routine implementation of Scan File Function
-// func FindMatch(fpaths *C.char, outputPath *C.char, maxRoutines int) bool {
-// 	PATH := C.GoString(fpaths)
-
-// 	// Channels, Mutex and WaitGroups
-// 	var mutex sync.Mutex
-// 	var wg sync.WaitGroup
-// 	fileCh := make(chan *FileContent, 5)
-// 	guard := make(chan struct{}, maxRoutines)
-
-// 	paths := GetPaths(PATH)
-// 	res := result.InitJSON(PATH, len(paths))
-// 	wg.Add(len(paths))
-
-// 	go FileReader(paths, fileCh)
-
-// 	// c, err := CreateClassifier()
-// 	// if err != nil {
-// 	// 	return false
-// 	// }
-
-// 	for file := range fileCh {
-
-// 		// Wait for guard channel to free-up
-// 		guard <- struct{}{}
-// 		go func(f *FileContent) {
-// 			defer wg.Done()
-// 			finfo := result.InitFile(f.path)
-
-// 			if len(f.err) > 0 {
-// 				finfo.Scan_Error = f.err
-// 				res.AddFile(finfo)
-// 				return
-// 			}
-// 			m := gclassifier.Match(f.data)
-// 			for i := 0; i < m.Len(); i++ {
-// 				finfo.Licenses = append(finfo.Licenses, result.License{
-// 					Key:        m[i].Name,
-// 					Confidence: m[i].Confidence,
-// 					StartLine:  m[i].StartLine,
-// 					EndLine:    m[i].EndLine,
-// 					StartIndex: m[i].StartTokenIndex,
-// 					EndIndex:   m[i].EndTokenIndex})
-
-// 				finfo.Expression = append(finfo.Expression, m[i].Name)
-// 			}
-// 			cpInfo, tokens := CopyrightInfo(string(f.data))
-// 			for i := 0; i < len(cpInfo); i++ {
-// 				finfo.Copyrights = append(finfo.Copyrights, result.CpInfo{
-// 					Expression: validate(cpInfo[i][0]),
-// 					StartIndex: tokens[i][0],
-// 					EndIndex:   tokens[i][1],
-// 					Holder:     validate(cpInfo[i][1]),
-// 				})
-// 			}
-// 			mutex.Lock()
-// 			res.AddFile(finfo)
-// 			mutex.Unlock()
-// 			finfo = nil
-// 			f = nil
-// 			<-guard
-
-// 		}(file)
-// 	}
-
-// 	wg.Wait()
-// 	finishError := res.WriteJSON(C.GoString(outputPath))
-// 	res = nil
-// 	close(guard)
-// 	return finishError == nil
-// }
 
 //export ScanFile
 func ScanFile(fpaths *C.char, maxSize int, useBuffer bool) *C.char {
@@ -281,25 +194,6 @@ func BuffScanFile(fpaths *C.char, bufferSize int) *C.char {
 	return C.CString(jString)
 }
 
-// GetPaths crawls a given directory recursively and gives absolute path of all files
-func GetPaths(fPath string) []string {
-	dir, _ := isDirectory(fPath)
-	fileList := []string{}
-	if dir {
-		filepath.Walk(fPath, func(path string, f os.FileInfo, err error) error {
-			dir, _ := isDirectory(path)
-			if dir {
-				return nil
-			}
-			fileList = append(fileList, path)
-			return nil
-		})
-	} else {
-		fileList = []string{fPath}
-	}
-	return fileList
-}
-
 // CopyrightInfo finds a copyright notification, if it exists, and returns
 // the copyright holder.
 func CopyrightInfo(contents string) ([][]string, [][]int) {
@@ -309,12 +203,6 @@ func CopyrightInfo(contents string) ([][]string, [][]int) {
 	matches := copyrightRE.FindAllStringSubmatch(normalizedString, -1)
 	tokens := copyrightRE.FindAllStringSubmatchIndex(normalizedString, -1)
 
-	// var cpInfo [][]string
-	// for _, match := range matches {
-	// 	if len(match) == 2 {
-	// 		cpInfo = append(cpInfo, []string{strings.TrimSpace(match[0]), strings.TrimSpace(match[1])})
-	// 	}
-	// }
 	return matches, tokens
 }
 
@@ -331,15 +219,4 @@ func validate(test string) string {
 	return string(v)
 }
 
-func getLineNumber(data []byte, index int) int {
-	count := 1
-	lineSep := []byte{'\n'}
-	for i := 0; i < index; i++ {
-		if data[i] == lineSep[0] {
-			count++
-		}
-	}
-
-	return count
-}
 func main() {}
